@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../core/theme/app_theme.dart';
+import '../core/widgets/glassmorphic_container.dart';
+import '../core/widgets/gradient_button.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -7,205 +10,499 @@ class ProfilePage extends StatefulWidget {
   State<ProfilePage> createState() => _ProfilePageState();
 }
 
-class _ProfilePageState extends State<ProfilePage> {
+class _ProfilePageState extends State<ProfilePage>
+    with TickerProviderStateMixin {
+  late AnimationController _animationController;
   int _tabIndex = 0;
-  final List<String> _tabs = ['Grid', 'Bookmarks', 'Tagged'];
-  final List<Color> _imageColors = [
-    Colors.black12, Colors.black26, Colors.black38, Colors.black45,
-    Colors.black54, Colors.black87, Colors.grey, Colors.white24
+  final List<String> _tabs = ['Graffiti', 'Saved', 'Liked'];
+
+  final List<Map<String, dynamic>> _userGraffiti = [
+    {
+      'title': 'Urban Flow',
+      'location': 'Downtown',
+      'likes': 234,
+      'color': AppTheme.accentOrange,
+      'time': '2d ago',
+    },
+    {
+      'title': 'City Lights',
+      'location': 'Art District',
+      'likes': 189,
+      'color': AppTheme.accentBlue,
+      'time': '5d ago',
+    },
+    {
+      'title': 'Street Canvas',
+      'location': 'Gallery District',
+      'likes': 456,
+      'color': AppTheme.accentGreen,
+      'time': '1w ago',
+    },
+    {
+      'title': 'Wall Stories',
+      'location': 'Main Street',
+      'likes': 321,
+      'color': AppTheme.accentPurple,
+      'time': '2w ago',
+    },
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Profile header
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 24),
-              child: Column(
-                children: [
-                  Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Container(
-                        width: 90,
-                        height: 90,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 3),
-                        ),
-                        child: const CircleAvatar(
-                          radius: 44,
-                          backgroundColor: Colors.grey,
-                          backgroundImage: null,
-                          child: Icon(Icons.person, color: Colors.white, size: 44),
-                        ),
-                      ),
-                      Positioned(
-                        bottom: 8,
-                        right: 8,
-                        child: Container(
-                          padding: const EdgeInsets.all(2),
-                          decoration: BoxDecoration(
-                            color: Colors.blueAccent,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
-                          ),
-                          child: const Icon(Icons.check_circle, color: Colors.white, size: 18),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Ilja Miskov',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    '@iljamiskov',
-                    style: TextStyle(
-                      color: Colors.white54,
-                      fontSize: 15,
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _buildStat('291', 'Posts'),
-                      _buildStat('6,988', 'Followers'),
-                      _buildStat('793', 'Following'),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {},
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF7B68EE),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
-                        ),
-                        child: const Text('Following', style: TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                      const SizedBox(width: 12),
-                      OutlinedButton(
-                        onPressed: () {},
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          side: const BorderSide(color: Colors.white24),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
-                        ),
-                        child: const Text('Message', style: TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            // Tabs
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 20),
-              decoration: BoxDecoration(
-                color: Colors.white10,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: List.generate(_tabs.length, (i) {
-                  final selected = _tabIndex == i;
-                  return Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _tabIndex = i),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        decoration: BoxDecoration(
-                          color: selected ? Colors.white24 : Colors.transparent,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          i == 0
-                              ? Icons.grid_on
-                              : i == 1
-                                  ? Icons.bookmark_border
-                                  : Icons.person_pin,
-                          color: selected ? const Color(0xFF7B68EE) : Colors.white54,
-                        ),
-                      ),
-                    ),
-                  );
-                }),
-              ),
-            ),
-            const SizedBox(height: 18),
-            // Grid
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: GridView.builder(
-                  itemCount: _imageColors.length,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                  ),
-                  itemBuilder: (context, i) => ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Container(
-                      color: _imageColors[i],
-                      child: const Center(
-                        child: Icon(Icons.image, color: Colors.white54, size: 32),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
+      backgroundColor: AppTheme.primaryBlack,
+      body: Container(
+        decoration: const BoxDecoration(gradient: AppTheme.backgroundGradient),
+        child: SafeArea(
+          child: Column(
+            children: [
+              _buildHeader(),
+              _buildProfileInfo(),
+              _buildStats(),
+              _buildActionButtons(),
+              _buildTabBar(),
+              Expanded(child: _buildContent()),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildStat(String value, String label) {
+  Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 18),
-      child: Column(
+      padding: const EdgeInsets.all(20),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            value,
-            style: const TextStyle(
+          const Text(
+            'Profile',
+            style: TextStyle(
               color: Colors.white,
+              fontSize: 24,
               fontWeight: FontWeight.bold,
-              fontSize: 18,
             ),
           ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white54,
-              fontSize: 13,
-            ),
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () {
+                  // Settings
+                },
+                child: GlassmorphicContainer(
+                  width: 44,
+                  height: 44,
+                  borderRadius: BorderRadius.circular(22),
+                  child: const Icon(
+                    Icons.settings,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              GestureDetector(
+                onTap: () {
+                  // Menu
+                },
+                child: GlassmorphicContainer(
+                  width: 44,
+                  height: 44,
+                  borderRadius: BorderRadius.circular(22),
+                  child: const Icon(Icons.menu, color: Colors.white, size: 20),
+                ),
+              ),
+            ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildProfileInfo() {
+    return AnimatedBuilder(
+      animation: _animationController,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(0, 50 * (1 - _animationController.value)),
+          child: Opacity(
+            opacity: _animationController.value,
+            child: Column(
+              children: [
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: AppTheme.primaryGradient,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.accentOrange.withOpacity(0.4),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: Container(
+                        margin: const EdgeInsets.all(3),
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppTheme.secondaryBlack,
+                        ),
+                        child: const CircleAvatar(
+                          radius: 47,
+                          backgroundColor: Colors.transparent,
+                          child: Icon(
+                            Icons.person,
+                            color: Colors.white,
+                            size: 48,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          gradient: AppTheme.accentGradient,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppTheme.primaryBlack,
+                            width: 2,
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.verified,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Alex Rivera',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  '@alexrivera_art',
+                  style: TextStyle(color: AppTheme.secondaryText, fontSize: 16),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.primaryGradient,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text(
+                    'AR Artist',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStats() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _buildStat('42', 'Graffiti'),
+          _buildStat('1.2K', 'Followers'),
+          _buildStat('234', 'Following'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStat(String value, String label) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: const TextStyle(color: AppTheme.secondaryText, fontSize: 14),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Row(
+        children: [
+          Expanded(
+            child: GradientButton(
+              text: 'Edit Profile',
+              onPressed: () {
+                // Edit profile
+              },
+              icon: Icons.edit,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: AppTheme.accentGray,
+              borderRadius: BorderRadius.circular(25),
+              border: Border.all(color: Colors.white24),
+            ),
+            child: const Icon(Icons.share, color: Colors.white, size: 20),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabBar() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: AppTheme.accentGray,
+        borderRadius: BorderRadius.circular(25),
+      ),
+      child: Row(
+        children: List.generate(_tabs.length, (index) {
+          final isSelected = _tabIndex == index;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() => _tabIndex = index),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  gradient: isSelected ? AppTheme.primaryGradient : null,
+                  borderRadius: BorderRadius.circular(25),
+                ),
+                child: Text(
+                  _tabs[index],
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : AppTheme.secondaryText,
+                    fontSize: 14,
+                    fontWeight: isSelected
+                        ? FontWeight.w600
+                        : FontWeight.normal,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: GridView.builder(
+        itemCount: _userGraffiti.length,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: 0.8,
+        ),
+        itemBuilder: (context, index) {
+          final graffiti = _userGraffiti[index];
+          return _buildGraffitiItem(graffiti, index);
+        },
+      ),
+    );
+  }
+
+  Widget _buildGraffitiItem(Map<String, dynamic> graffiti, int index) {
+    return AnimatedBuilder(
+      animation: _animationController,
+      builder: (context, child) {
+        final slideAnimation =
+            Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero).animate(
+              CurvedAnimation(
+                parent: _animationController,
+                curve: Interval(
+                  (0.2 + (index * 0.1)).clamp(0.0, 0.8),
+                  (0.6 + (index * 0.1)).clamp(0.2, 1.0),
+                  curve: Curves.easeOutCubic,
+                ),
+              ),
+            );
+
+        return SlideTransition(
+          position: slideAnimation,
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppTheme.secondaryBlack,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withOpacity(0.1)),
+              boxShadow: [
+                BoxShadow(
+                  color: graffiti['color'].withOpacity(0.2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Graffiti preview
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          graffiti['color'].withOpacity(0.3),
+                          graffiti['color'].withOpacity(0.1),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(16),
+                        topRight: Radius.circular(16),
+                      ),
+                    ),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.view_in_ar,
+                            size: 32,
+                            color: graffiti['color'],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            graffiti['title'],
+                            style: TextStyle(
+                              color: graffiti['color'],
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Graffiti info
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.location_on_outlined,
+                            size: 14,
+                            color: AppTheme.secondaryText,
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              graffiti['location'],
+                              style: const TextStyle(
+                                color: AppTheme.secondaryText,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.favorite,
+                                size: 14,
+                                color: AppTheme.accentRed,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${graffiti['likes']}',
+                                style: const TextStyle(
+                                  color: AppTheme.secondaryText,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            graffiti['time'],
+                            style: const TextStyle(
+                              color: AppTheme.mutedText,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

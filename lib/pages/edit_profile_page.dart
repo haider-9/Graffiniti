@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../core/theme/app_theme.dart';
+import '../core/widgets/gradient_button.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
@@ -8,238 +10,76 @@ class EditProfilePage extends StatefulWidget {
 }
 
 class _EditProfilePageState extends State<EditProfilePage> {
-  final _firstNameController = TextEditingController(text: 'Sabrina');
-  final _lastNameController = TextEditingController(text: 'Aryan');
-  final _usernameController = TextEditingController(text: '@Sabrina');
-  final _emailController = TextEditingController(text: '@SabrinaAry20@gmail.com');
-  final _phoneController = TextEditingController(text: '904 6470');
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController(text: 'Alex Rivera');
+  final _usernameController = TextEditingController(text: 'alexrivera_art');
+  final _bioController = TextEditingController(
+    text: 'AR Artist creating digital street art',
+  );
+  final _locationController = TextEditingController(text: 'New York, NY');
 
-  String _selectedBirth = 'Birth';
-  String _selectedGender = 'Gender';
+  bool _isPublicProfile = true;
+  bool _showLocation = true;
+  bool _allowMessages = true;
 
   @override
   void dispose() {
-    _firstNameController.dispose();
-    _lastNameController.dispose();
+    _nameController.dispose();
     _usernameController.dispose();
-    _emailController.dispose();
-    _phoneController.dispose();
+    _bioController.dispose();
+    _locationController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.primaryBlack,
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Colors.purple.shade300,
-              Colors.pink.shade200,
-              Colors.orange.shade200,
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
+        decoration: const BoxDecoration(gradient: AppTheme.backgroundGradient),
         child: SafeArea(
           child: Column(
             children: [
-              // Header with back button
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(
-                          Icons.arrow_back,
-                          color: Colors.white,
-                          size: 24,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              
-              // Profile Picture
-              Stack(
-                children: [
-                  Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 4),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
-                        ),
-                      ],
-                    ),
-                    child: const CircleAvatar(
-                      radius: 56,
-                      backgroundColor: Colors.white,
-                      child: Icon(
-                        Icons.person,
-                        size: 60,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: Colors.blue.shade600,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                      child: const Icon(
-                        Icons.edit,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 40),
-              
-              // Form Container
+              _buildHeader(),
               Expanded(
-                child: Container(
-                  width: double.infinity,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(30),
-                      topRight: Radius.circular(30),
-                    ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Edit Profile',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(height: 32),
-                          
-                          // First Name
-                          _buildTextField(
-                            label: 'First Name',
-                            controller: _firstNameController,
-                          ),
-                          const SizedBox(height: 20),
-                          
-                          // Last Name
-                          _buildTextField(
-                            label: 'Last Name',
-                            controller: _lastNameController,
-                          ),
-                          const SizedBox(height: 20),
-                          
-                          // Username
-                          _buildTextField(
-                            label: 'Username',
-                            controller: _usernameController,
-                          ),
-                          const SizedBox(height: 20),
-                          
-                          // Email
-                          _buildTextField(
-                            label: 'Email',
-                            controller: _emailController,
-                          ),
-                          const SizedBox(height: 20),
-                          
-                          // Phone Number
-                          _buildPhoneField(),
-                          const SizedBox(height: 20),
-                          
-                          // Birth Dropdown
-                          _buildDropdownField(
-                            label: 'Birth',
-                            value: _selectedBirth,
-                            onChanged: (value) {
-                              setState(() {
-                                _selectedBirth = value!;
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 20),
-                          
-                          // Gender Dropdown
-                          _buildDropdownField(
-                            label: 'Gender',
-                            value: _selectedGender,
-                            onChanged: (value) {
-                              setState(() {
-                                _selectedGender = value!;
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 40),
-                          
-                          // Change Password Button
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: () {
-                                // Handle change password
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue.shade700,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                elevation: 2,
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Text(
-                                    'Change Password',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Icon(
-                                    Icons.lock_outline,
-                                    size: 20,
-                                    color: Colors.white,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                        ],
-                      ),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        _buildProfilePicture(),
+                        const SizedBox(height: 32),
+                        _buildTextField(
+                          controller: _nameController,
+                          label: 'Display Name',
+                          icon: Icons.person_outline,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          controller: _usernameController,
+                          label: 'Username',
+                          icon: Icons.alternate_email,
+                          prefix: '@',
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          controller: _bioController,
+                          label: 'Bio',
+                          icon: Icons.description_outlined,
+                          maxLines: 3,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          controller: _locationController,
+                          label: 'Location',
+                          icon: Icons.location_on_outlined,
+                        ),
+                        const SizedBox(height: 32),
+                        _buildPrivacySettings(),
+                        const SizedBox(height: 32),
+                        _buildSaveButton(),
+                      ],
                     ),
                   ),
                 ),
@@ -251,171 +91,361 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
-  Widget _buildTextField({
-    required String label,
-    required TextEditingController controller,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            color: Colors.grey,
-            fontWeight: FontWeight.w500,
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppTheme.accentGray,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: Colors.white24),
+              ),
+              child: const Icon(
+                Icons.arrow_back,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Colors.grey.shade50,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade300),
+          const SizedBox(width: 16),
+          const Text(
+            'Edit Profile',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
             ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade300),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.blue.shade400, width: 2),
-            ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  Widget _buildPhoneField() {
+  Widget _buildProfilePicture() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Phone Number',
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Row(
+        Stack(
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+              width: 120,
+              height: 120,
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                border: Border.all(color: Colors.grey.shade300),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  bottomLeft: Radius.circular(12),
-                ),
+                shape: BoxShape.circle,
+                gradient: AppTheme.primaryGradient,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.accentOrange.withOpacity(0.4),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
               ),
-              child: const Text(
-                '+234',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.black87,
+              child: Container(
+                margin: const EdgeInsets.all(3),
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppTheme.secondaryBlack,
+                ),
+                child: ClipOval(
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const CircleAvatar(
+                        radius: 57,
+                        backgroundColor: Colors.transparent,
+                        child: Icon(
+                          Icons.person,
+                          color: Colors.white,
+                          size: 60,
+                        ),
+                      );
+                    },
+                  ),
                 ),
               ),
             ),
-            Expanded(
-              child: TextField(
-                controller: _phoneController,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.grey.shade50,
-                  border: OutlineInputBorder(
-                    borderRadius: const BorderRadius.only(
-                      topRight: Radius.circular(12),
-                      bottomRight: Radius.circular(12),
-                    ),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: GestureDetector(
+                onTap: () {
+                  _showImagePickerDialog();
+                },
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.primaryGradient,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppTheme.primaryBlack, width: 2),
                   ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: const BorderRadius.only(
-                      topRight: Radius.circular(12),
-                      bottomRight: Radius.circular(12),
-                    ),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  child: const Icon(
+                    Icons.camera_alt,
+                    color: Colors.white,
+                    size: 18,
                   ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: const BorderRadius.only(
-                      topRight: Radius.circular(12),
-                      bottomRight: Radius.circular(12),
-                    ),
-                    borderSide: BorderSide(color: Colors.blue.shade400, width: 2),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 ),
               ),
             ),
           ],
         ),
+        const SizedBox(height: 16),
+        const Text(
+          'Tap to change profile picture',
+          style: TextStyle(color: AppTheme.secondaryText, fontSize: 14),
+        ),
       ],
     );
   }
 
-  Widget _buildDropdownField({
+  Widget _buildTextField({
+    required TextEditingController controller,
     required String label,
-    required String value,
-    required ValueChanged<String?> onChanged,
+    required IconData icon,
+    String? prefix,
+    int maxLines = 1,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            color: Colors.grey,
-            fontWeight: FontWeight.w500,
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.secondaryBlack,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
+      ),
+      child: TextFormField(
+        controller: controller,
+        maxLines: maxLines,
+        style: const TextStyle(color: Colors.white),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: const TextStyle(color: AppTheme.secondaryText),
+          prefixIcon: Icon(icon, color: AppTheme.secondaryText),
+          prefixText: prefix,
+          prefixStyle: const TextStyle(color: AppTheme.secondaryText),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
           ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: AppTheme.accentOrange),
+          ),
+          contentPadding: const EdgeInsets.all(16),
         ),
-        const SizedBox(height: 8),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.grey.shade50,
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: value,
-              isExpanded: true,
-              icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
-              style: const TextStyle(
+      ),
+    );
+  }
+
+  Widget _buildPrivacySettings() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.secondaryBlack,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text(
+              'Privacy Settings',
+              style: TextStyle(
+                color: AppTheme.accentOrange,
                 fontSize: 16,
-                color: Colors.black87,
+                fontWeight: FontWeight.w600,
               ),
-              items: [
-                DropdownMenuItem(value: label, child: Text(label)),
-                if (label == 'Birth') ...[
-                  const DropdownMenuItem(value: '1990', child: Text('1990')),
-                  const DropdownMenuItem(value: '1991', child: Text('1991')),
-                  const DropdownMenuItem(value: '1992', child: Text('1992')),
-                  const DropdownMenuItem(value: '1993', child: Text('1993')),
-                  const DropdownMenuItem(value: '1994', child: Text('1994')),
-                  const DropdownMenuItem(value: '1995', child: Text('1995')),
-                ],
-                if (label == 'Gender') ...[
-                  const DropdownMenuItem(value: 'Male', child: Text('Male')),
-                  const DropdownMenuItem(value: 'Female', child: Text('Female')),
-                  const DropdownMenuItem(value: 'Other', child: Text('Other')),
-                ],
-              ],
-              onChanged: onChanged,
             ),
+          ),
+          _buildSwitchTile(
+            'Public Profile',
+            'Allow others to find and view your profile',
+            _isPublicProfile,
+            (value) => setState(() => _isPublicProfile = value),
+          ),
+          _buildSwitchTile(
+            'Show Location',
+            'Display your location on your profile',
+            _showLocation,
+            (value) => setState(() => _showLocation = value),
+          ),
+          _buildSwitchTile(
+            'Allow Messages',
+            'Let other users send you direct messages',
+            _allowMessages,
+            (value) => setState(() => _allowMessages = value),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSwitchTile(
+    String title,
+    String subtitle,
+    bool value,
+    ValueChanged<bool> onChanged,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    color: AppTheme.secondaryText,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeColor: AppTheme.accentOrange,
+            inactiveThumbColor: Colors.white54,
+            inactiveTrackColor: AppTheme.accentGray,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSaveButton() {
+    return Column(
+      children: [
+        GradientButton(
+          text: 'Save Changes',
+          onPressed: () {
+            _saveProfile();
+          },
+          icon: Icons.save,
+          width: double.infinity,
+        ),
+        const SizedBox(height: 16),
+        TextButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          child: const Text(
+            'Cancel',
+            style: TextStyle(color: AppTheme.secondaryText, fontSize: 16),
           ),
         ),
       ],
+    );
+  }
+
+  void _showImagePickerDialog() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.secondaryBlack,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppTheme.accentGray,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Change Profile Picture',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildImageOption(
+                  'Camera',
+                  Icons.camera_alt,
+                  () => Navigator.pop(context),
+                ),
+                _buildImageOption(
+                  'Gallery',
+                  Icons.photo_library,
+                  () => Navigator.pop(context),
+                ),
+                _buildImageOption(
+                  'Remove',
+                  Icons.delete,
+                  () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageOption(String label, IconData icon, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: AppTheme.accentGray,
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: Icon(icon, color: Colors.white, size: 24),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: const TextStyle(color: AppTheme.secondaryText, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _saveProfile() {
+    Navigator.pop(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Profile updated successfully!'),
+        backgroundColor: AppTheme.accentGreen,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
     );
   }
 }

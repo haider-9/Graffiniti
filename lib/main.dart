@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:camera/camera.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
+import 'core/auth/auth_wrapper.dart';
 import 'pages/camera_page.dart';
 import 'pages/discover_page.dart';
 import 'pages/simple_profile_page.dart';
@@ -10,6 +13,9 @@ List<CameraDescription> cameras = [];
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // Set system UI overlay style
   SystemChrome.setSystemUIOverlayStyle(
@@ -34,7 +40,8 @@ class MyApp extends StatelessWidget {
       title: 'Griffiniti',
       theme: AppTheme.darkTheme,
       debugShowCheckedModeBanner: false,
-      home: const MainNavigation(),
+      home: const AuthWrapper(),
+      routes: {'/main': (context) => const MainNavigation()},
     );
   }
 }

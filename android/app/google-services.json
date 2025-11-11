@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "510755978540",
+    "project_id": "griffiniti-429f8",
+    "storage_bucket": "griffiniti-429f8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:510755978540:android:911388378167b52b6e0089",
+        "android_client_info": {
+          "package_name": "com.example.g"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDA2urH2CVQ9eUMhlXMdL209ICGhSI1qgs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:510755978540:android:d8b1e9d1064ca8766e0089",
+        "android_client_info": {
+          "package_name": "com.example.griffiniti"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDA2urH2CVQ9eUMhlXMdL209ICGhSI1qgs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:510755978540:android:890206c26b6b418e6e0089",
+        "android_client_info": {
+          "package_name": "com.example.grifiniti"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDA2urH2CVQ9eUMhlXMdL209ICGhSI1qgs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

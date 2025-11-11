@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
+import '../core/services/auth_service.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -9,6 +10,7 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
+  final AuthService _authService = AuthService();
   bool _notificationsEnabled = true;
   bool _locationEnabled = true;
   bool _autoSaveEnabled = false;
@@ -122,6 +124,13 @@ class _SettingsPageState extends State<SettingsPage> {
                         () {
                           // Export data
                         },
+                      ),
+                      _buildActionTile(
+                        'Sign Out',
+                        'Sign out of your account',
+                        Icons.logout,
+                        _showLogoutDialog,
+                        isDestructive: true,
                       ),
                     ]),
                     const SizedBox(height: 24),
@@ -353,8 +362,9 @@ class _SettingsPageState extends State<SettingsPage> {
     String title,
     String subtitle,
     IconData icon,
-    VoidCallback onTap,
-  ) {
+    VoidCallback onTap, {
+    bool isDestructive = false,
+  }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -378,8 +388,8 @@ class _SettingsPageState extends State<SettingsPage> {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: isDestructive ? Colors.red : Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
@@ -534,5 +544,58 @@ class _SettingsPageState extends State<SettingsPage> {
         ],
       ),
     );
+  }
+
+  // void _showLogoutDialog() {
+  //   showDialog(
+  //     context: context,
+  //     builder: (BuildContext context) {
+  //       return AlertDialog(
+  //         backgroundColor: AppTheme.secondaryBlack,
+  //         title: const Text('Sign Out', style: TextStyle(color: Colors.white)),
+  //         content: const Text(
+  //           'Are you sure you want to sign out?',
+  //           style: TextStyle(color: AppTheme.secondaryText),
+  //         ),
+  //         actions: [
+  //           TextButton(
+  //             onPressed: () => Navigator.of(context).pop(),
+  //             child: const Text(
+  //               'Cancel',
+  //               style: TextStyle(color: AppTheme.secondaryText),
+  //             ),
+  //           ),
+  //           TextButton(
+  //             onPressed: () {
+  //               Navigator.of(context).pop();
+  //               _logout();
+  //             },
+  //             child: const Text(
+  //               'Sign Out',
+  //               style: TextStyle(color: Colors.red),
+  //             ),
+  //           ),
+  //         ],
+  //       );
+  //     },
+  //   );
+  // }
+
+  Future<void> _logout() async {
+    try {
+      await _authService.signOut();
+      if (mounted) {
+        Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Logout failed: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }

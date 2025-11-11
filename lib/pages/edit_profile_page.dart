@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 import '../core/theme/app_theme.dart';
 import '../core/widgets/gradient_button.dart';
+import '../core/services/user_service.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
@@ -11,28 +14,77 @@ class EditProfilePage extends StatefulWidget {
 
 class _EditProfilePageState extends State<EditProfilePage> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController(text: 'Alex Rivera');
-  final _usernameController = TextEditingController(text: 'alexrivera_art');
-  final _bioController = TextEditingController(
-    text: 'AR Artist creating digital street art',
-  );
-  final _locationController = TextEditingController(text: 'New York, NY');
+  final _nameController = TextEditingController();
+  final _bioController = TextEditingController();
+  final _locationController = TextEditingController();
+  final _websiteController = TextEditingController();
 
-  bool _isPublicProfile = true;
-  bool _showLocation = true;
-  bool _allowMessages = true;
+  final UserService _userService = UserService();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  bool _isLoading = false;
+  bool _isLoadingData = true;
+  Map<String, dynamic> _userData = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _usernameController.dispose();
     _bioController.dispose();
     _locationController.dispose();
+    _websiteController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      final userId = _auth.currentUser?.uid;
+      if (userId != null) {
+        final userData = await _userService.getUserData(userId);
+        if (userData != null) {
+          setState(() {
+            _userData = userData;
+            _nameController.text = userData['displayName'] ?? '';
+            _bioController.text = userData['bio'] ?? '';
+            _locationController.text = userData['location'] ?? '';
+            _websiteController.text = userData['website'] ?? '';
+            _isLoadingData = false;
+          });
+        }
+      }
+    } catch (e) {
+      setState(() {
+        _isLoadingData = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading profile: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoadingData) {
+      return Scaffold(
+        backgroundColor: AppTheme.primaryBlack,
+        body: const Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.accentOrange),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppTheme.primaryBlack,
       body: Container(
@@ -54,13 +106,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           controller: _nameController,
                           label: 'Display Name',
                           icon: Icons.person_outline,
-                        ),
-                        const SizedBox(height: 16),
-                        _buildTextField(
-                          controller: _usernameController,
-                          label: 'Username',
-                          icon: Icons.alternate_email,
-                          prefix: '@',
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Display name is required';
+                            }
+                            return null;
+                          },
                         ),
                         const SizedBox(height: 16),
                         _buildTextField(
@@ -68,6 +119,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           label: 'Bio',
                           icon: Icons.description_outlined,
                           maxLines: 3,
+                          maxLength: 150,
                         ),
                         const SizedBox(height: 16),
                         _buildTextField(
@@ -75,8 +127,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           label: 'Location',
                           icon: Icons.location_on_outlined,
                         ),
-                        const SizedBox(height: 32),
-                        _buildPrivacySettings(),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          controller: _websiteController,
+                          label: 'Website',
+                          icon: Icons.link_outlined,
+                        ),
                         const SizedBox(height: 32),
                         _buildSaveButton(),
                       ],
@@ -153,21 +209,33 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   color: AppTheme.secondaryBlack,
                 ),
                 child: ClipOval(
-                  child: Image.asset(
-                    'assets/images/logo.png',
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const CircleAvatar(
-                        radius: 57,
-                        backgroundColor: Colors.transparent,
-                        child: Icon(
-                          Icons.person,
-                          color: Colors.white,
-                          size: 60,
+                  child:
+                      _userData['profileImageUrl'] != null &&
+                          _userData['profileImageUrl'].toString().isNotEmpty
+                      ? Image.network(
+                          _userData['profileImageUrl'],
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const CircleAvatar(
+                              radius: 57,
+                              backgroundColor: Colors.transparent,
+                              child: Icon(
+                                Icons.person,
+                                color: Colors.white,
+                                size: 60,
+                              ),
+                            );
+                          },
+                        )
+                      : const CircleAvatar(
+                          radius: 57,
+                          backgroundColor: Colors.transparent,
+                          child: Icon(
+                            Icons.person,
+                            color: Colors.white,
+                            size: 60,
+                          ),
                         ),
-                      );
-                    },
-                  ),
                 ),
               ),
             ),
@@ -211,6 +279,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
     required IconData icon,
     String? prefix,
     int maxLines = 1,
+    int? maxLength,
+    String? Function(String?)? validator,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -221,6 +291,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
       child: TextFormField(
         controller: controller,
         maxLines: maxLines,
+        maxLength: maxLength,
+        validator: validator,
         style: const TextStyle(color: Colors.white),
         decoration: InputDecoration(
           labelText: label,
@@ -236,97 +308,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
             borderRadius: BorderRadius.circular(16),
             borderSide: const BorderSide(color: AppTheme.accentOrange),
           ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: Colors.red),
+          ),
           contentPadding: const EdgeInsets.all(16),
+          counterStyle: const TextStyle(color: AppTheme.secondaryText),
         ),
-      ),
-    );
-  }
-
-  Widget _buildPrivacySettings() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.secondaryBlack,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text(
-              'Privacy Settings',
-              style: TextStyle(
-                color: AppTheme.accentOrange,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          _buildSwitchTile(
-            'Public Profile',
-            'Allow others to find and view your profile',
-            _isPublicProfile,
-            (value) => setState(() => _isPublicProfile = value),
-          ),
-          _buildSwitchTile(
-            'Show Location',
-            'Display your location on your profile',
-            _showLocation,
-            (value) => setState(() => _showLocation = value),
-          ),
-          _buildSwitchTile(
-            'Allow Messages',
-            'Let other users send you direct messages',
-            _allowMessages,
-            (value) => setState(() => _allowMessages = value),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSwitchTile(
-    String title,
-    String subtitle,
-    bool value,
-    ValueChanged<bool> onChanged,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    color: AppTheme.secondaryText,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeColor: AppTheme.accentOrange,
-            inactiveThumbColor: Colors.white54,
-            inactiveTrackColor: AppTheme.accentGray,
-          ),
-        ],
       ),
     );
   }
@@ -335,18 +323,20 @@ class _EditProfilePageState extends State<EditProfilePage> {
     return Column(
       children: [
         GradientButton(
-          text: 'Save Changes',
-          onPressed: () {
-            _saveProfile();
-          },
-          icon: Icons.save,
+          text: _isLoading ? 'Saving...' : 'Save Changes',
+          onPressed: _isLoading
+              ? () {} // Empty function instead of null
+              : () => _saveProfile(),
+          icon: _isLoading ? null : Icons.save,
           width: double.infinity,
         ),
         const SizedBox(height: 16),
         TextButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          onPressed: _isLoading
+              ? null
+              : () {
+                  Navigator.pop(context);
+                },
           child: const Text(
             'Cancel',
             style: TextStyle(color: AppTheme.secondaryText, fontSize: 16),
@@ -437,15 +427,57 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
-  void _saveProfile() {
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Profile updated successfully!'),
-        backgroundColor: AppTheme.accentGreen,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
+  Future<void> _saveProfile() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final userId = _auth.currentUser?.uid;
+      if (userId != null) {
+        await _userService.updateUserProfile(
+          userId: userId,
+          displayName: _nameController.text.trim(),
+          bio: _bioController.text.trim(),
+          location: _locationController.text.trim(),
+          website: _websiteController.text.trim(),
+        );
+
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Profile updated successfully!'),
+              backgroundColor: AppTheme.accentGreen,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating profile: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 }

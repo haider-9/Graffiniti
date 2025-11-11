@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../core/theme/app_theme.dart';
 import '../core/widgets/gradient_button.dart';
+import '../core/services/auth_service.dart';
+import '../core/services/user_service.dart';
 import 'settings_page.dart';
 import 'edit_profile_page.dart';
 
@@ -14,6 +18,68 @@ class SimpleProfilePage extends StatefulWidget {
 class _SimpleProfilePageState extends State<SimpleProfilePage> {
   int _tabIndex = 0;
   final List<String> _tabs = ['Graffiti', 'Saved', 'Liked'];
+  final AuthService _authService = AuthService();
+  final UserService _userService = UserService();
+  User? _currentUser;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentUser = _authService.currentUser;
+  }
+
+  Future<void> _logout() async {
+    try {
+      await _authService.signOut();
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed('/');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Logout failed: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showLogoutDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: AppTheme.secondaryBlack,
+          title: const Text('Logout', style: TextStyle(color: Colors.white)),
+          content: const Text(
+            'Are you sure you want to logout?',
+            style: TextStyle(color: AppTheme.secondaryText),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: AppTheme.secondaryText),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _logout();
+              },
+              child: Text(
+                'Logout',
+                style: TextStyle(color: AppTheme.accentOrange),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   final List<Map<String, dynamic>> _userGraffiti = [
     {
@@ -48,20 +114,57 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_currentUser == null) {
+      return const Scaffold(
+        backgroundColor: AppTheme.primaryBlack,
+        body: Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.accentOrange),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppTheme.primaryBlack,
       body: Container(
         decoration: const BoxDecoration(gradient: AppTheme.backgroundGradient),
         child: SafeArea(
-          child: Column(
-            children: [
-              _buildHeader(),
-              _buildProfileInfo(),
-              _buildStats(),
-              _buildActionButtons(),
-              _buildTabBar(),
-              Expanded(child: _buildContent()),
-            ],
+          child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+            stream: _userService.getUserStream(_currentUser!.uid),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppTheme.accentOrange,
+                    ),
+                  ),
+                );
+              }
+
+              if (snapshot.hasError) {
+                return Center(
+                  child: Text(
+                    'Error loading profile: ${snapshot.error}',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                );
+              }
+
+              final userData = snapshot.data?.data() ?? {};
+
+              return Column(
+                children: [
+                  _buildHeader(),
+                  _buildProfileInfo(userData),
+                  _buildStats(userData),
+                  _buildActionButtons(),
+                  _buildTabBar(),
+                  Expanded(child: _buildContent()),
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -109,15 +212,22 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
                 ),
               ),
               const SizedBox(width: 12),
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: AppTheme.accentGray,
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(color: Colors.white24),
+              GestureDetector(
+                onTap: _showLogoutDialog,
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: AppTheme.accentGray,
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(color: Colors.white24),
+                  ),
+                  child: const Icon(
+                    Icons.logout,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
-                child: const Icon(Icons.menu, color: Colors.white, size: 20),
               ),
             ],
           ),
@@ -126,7 +236,7 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
     );
   }
 
-  Widget _buildProfileInfo() {
+  Widget _buildProfileInfo(Map<String, dynamic> userData) {
     return Column(
       children: [
         Container(
@@ -157,19 +267,55 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
           ),
         ),
         const SizedBox(height: 16),
-        const Text(
-          'Alex Rivera',
-          style: TextStyle(
+        Text(
+          userData['displayName'] ?? _currentUser?.displayName ?? 'User',
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
         ),
         const SizedBox(height: 4),
-        const Text(
-          '@alexrivera_art',
-          style: TextStyle(color: AppTheme.secondaryText, fontSize: 16),
+        Text(
+          userData['email'] ?? _currentUser?.email ?? 'user@example.com',
+          style: const TextStyle(color: AppTheme.secondaryText, fontSize: 16),
         ),
+        if (userData['bio'] != null &&
+            userData['bio'].toString().isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Text(
+              userData['bio'],
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+              textAlign: TextAlign.center,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+        if (userData['location'] != null &&
+            userData['location'].toString().isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.location_on_outlined,
+                size: 16,
+                color: AppTheme.secondaryText,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                userData['location'],
+                style: const TextStyle(
+                  color: AppTheme.secondaryText,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ],
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -190,15 +336,15 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
     );
   }
 
-  Widget _buildStats() {
+  Widget _buildStats(Map<String, dynamic> userData) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 24),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildStat('42', 'Graffiti'),
-          _buildStat('1.2K', 'Followers'),
-          _buildStat('234', 'Following'),
+          _buildStat('${userData['graffitiCount'] ?? 0}', 'Graffiti'),
+          _buildStat('${userData['followersCount'] ?? 0}', 'Followers'),
+          _buildStat('${userData['followingCount'] ?? 0}', 'Following'),
         ],
       ),
     );

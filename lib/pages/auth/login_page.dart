@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/toast_helper.dart';
 import 'signup_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -40,11 +41,12 @@ class _LoginPageState extends State<LoginPage> {
       );
 
       // Navigation handled automatically by AuthWrapper
+      if (mounted) {
+        ToastHelper.success(context, 'Welcome back!');
+      }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
-        );
+        ToastHelper.authError(context, e);
       }
     } finally {
       if (mounted) {

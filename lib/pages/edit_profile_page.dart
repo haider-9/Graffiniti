@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
 import '../core/theme/app_theme.dart';
 import '../core/widgets/gradient_button.dart';
+import '../core/utils/toast_helper.dart';
 import '../core/services/user_service.dart';
 
 class EditProfilePage extends StatefulWidget {
@@ -24,7 +27,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   bool _isLoading = false;
   bool _isLoadingData = true;
+  bool _isUploadingImage = false;
   Map<String, dynamic> _userData = {};
+  File? _selectedImage;
+  final ImagePicker _imagePicker = ImagePicker();
 
   @override
   void initState() {
@@ -43,31 +49,70 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   Future<void> _loadUserData() async {
     try {
-      final userId = _auth.currentUser?.uid;
-      if (userId != null) {
-        final userData = await _userService.getUserData(userId);
-        if (userData != null) {
+      final user = _auth.currentUser;
+      if (user == null) {
+        if (mounted) {
+          ToastHelper.error(context, 'No user logged in');
+          Navigator.pop(context);
+        }
+        return;
+      }
+
+      // First, load basic data from Firebase Auth (always available offline)
+      setState(() {
+        _nameController.text = user.displayName ?? '';
+        _userData['displayName'] = user.displayName ?? '';
+        _userData['email'] = user.email ?? '';
+        _userData['profileImageUrl'] = user.photoURL ?? '';
+      });
+
+      // Then try to load full data from Firestore (may fail if offline)
+      try {
+        final userData = await _userService.getUserData(user.uid);
+        if (userData != null && mounted) {
           setState(() {
             _userData = userData;
-            _nameController.text = userData['displayName'] ?? '';
+            _nameController.text =
+                userData['displayName'] ?? user.displayName ?? '';
             _bioController.text = userData['bio'] ?? '';
             _locationController.text = userData['location'] ?? '';
             _websiteController.text = userData['website'] ?? '';
-            _isLoadingData = false;
           });
         }
+      } catch (firestoreError) {
+        // If Firestore fails (offline), show a warning but continue with Auth data
+        if (mounted) {
+          ToastHelper.warning(
+            context,
+            'Offline mode: Some data may not be available',
+          );
+        }
       }
-    } catch (e) {
+
       setState(() {
         _isLoadingData = false;
       });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error loading profile: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+    } catch (e) {
+      // Fallback: use whatever data we have from Firebase Auth
+      final user = _auth.currentUser;
+      if (user != null) {
+        setState(() {
+          _nameController.text = user.displayName ?? '';
+          _userData['displayName'] = user.displayName ?? '';
+          _userData['email'] = user.email ?? '';
+          _userData['profileImageUrl'] = user.photoURL ?? '';
+          _isLoadingData = false;
+        });
+        if (mounted) {
+          ToastHelper.warning(context, 'Limited data available offline');
+        }
+      } else {
+        setState(() {
+          _isLoadingData = false;
+        });
+        if (mounted) {
+          ToastHelper.error(context, 'Unable to load profile data');
+        }
       }
     }
   }
@@ -196,7 +241,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 gradient: AppTheme.primaryGradient,
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.accentOrange.withOpacity(0.4),
+                    color: AppTheme.accentOrange.withValues(alpha: 0.4),
                     blurRadius: 20,
                     offset: const Offset(0, 8),
                   ),
@@ -209,12 +254,20 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   color: AppTheme.secondaryBlack,
                 ),
                 child: ClipOval(
-                  child:
-                      _userData['profileImageUrl'] != null &&
-                          _userData['profileImageUrl'].toString().isNotEmpty
+                  child: _selectedImage != null
+                      ? Image.file(
+                          _selectedImage!,
+                          fit: BoxFit.cover,
+                          width: 114,
+                          height: 114,
+                        )
+                      : _userData['profileImageUrl'] != null &&
+                            _userData['profileImageUrl'].toString().isNotEmpty
                       ? Image.network(
                           _userData['profileImageUrl'],
                           fit: BoxFit.cover,
+                          width: 114,
+                          height: 114,
                           errorBuilder: (context, error, stackTrace) {
                             return const CircleAvatar(
                               radius: 57,
@@ -243,22 +296,35 @@ class _EditProfilePageState extends State<EditProfilePage> {
               bottom: 0,
               right: 0,
               child: GestureDetector(
-                onTap: () {
-                  _showImagePickerDialog();
-                },
+                onTap: _isUploadingImage ? null : _showImagePickerDialog,
                 child: Container(
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    gradient: AppTheme.primaryGradient,
+                    gradient: _isUploadingImage
+                        ? LinearGradient(
+                            colors: [Colors.grey, Colors.grey.shade600],
+                          )
+                        : AppTheme.primaryGradient,
                     shape: BoxShape.circle,
                     border: Border.all(color: AppTheme.primaryBlack, width: 2),
                   ),
-                  child: const Icon(
-                    Icons.camera_alt,
-                    color: Colors.white,
-                    size: 18,
-                  ),
+                  child: _isUploadingImage
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        )
+                      : const Icon(
+                          Icons.camera_alt,
+                          color: Colors.white,
+                          size: 18,
+                        ),
                 ),
               ),
             ),
@@ -286,7 +352,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       decoration: BoxDecoration(
         color: AppTheme.secondaryBlack,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: TextFormField(
         controller: controller,
@@ -382,18 +448,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 _buildImageOption(
                   'Camera',
                   Icons.camera_alt,
-                  () => Navigator.pop(context),
+                  () => _pickImage(ImageSource.camera),
                 ),
                 _buildImageOption(
                   'Gallery',
                   Icons.photo_library,
-                  () => Navigator.pop(context),
+                  () => _pickImage(ImageSource.gallery),
                 ),
-                _buildImageOption(
-                  'Remove',
-                  Icons.delete,
-                  () => Navigator.pop(context),
-                ),
+                _buildImageOption('Remove', Icons.delete, () => _removeImage()),
               ],
             ),
             const SizedBox(height: 20),
@@ -427,6 +489,37 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
+  Future<void> _pickImage(ImageSource source) async {
+    Navigator.pop(context); // Close the bottom sheet
+
+    try {
+      final XFile? pickedFile = await _imagePicker.pickImage(
+        source: source,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 80,
+      );
+
+      if (pickedFile != null) {
+        setState(() {
+          _selectedImage = File(pickedFile.path);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ToastHelper.uploadError(context, itemName: 'image');
+      }
+    }
+  }
+
+  void _removeImage() {
+    Navigator.pop(context); // Close the bottom sheet
+    setState(() {
+      _selectedImage = null;
+      _userData['profileImageUrl'] = '';
+    });
+  }
+
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -436,7 +529,50 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
     try {
       final userId = _auth.currentUser?.uid;
-      if (userId != null) {
+      if (userId == null) {
+        if (mounted) {
+          ToastHelper.error(context, 'No user logged in');
+        }
+        return;
+      }
+
+      // Update Firebase Auth display name first (works offline)
+      if (_nameController.text.trim() != _auth.currentUser?.displayName) {
+        await _auth.currentUser?.updateDisplayName(_nameController.text.trim());
+      }
+
+      // Try to update profile image if changed (requires internet)
+      if (_selectedImage != null) {
+        try {
+          setState(() {
+            _isUploadingImage = true;
+          });
+          await _userService.updateProfileImage(userId, _selectedImage);
+          setState(() {
+            _isUploadingImage = false;
+          });
+        } catch (imageError) {
+          setState(() {
+            _isUploadingImage = false;
+          });
+          if (mounted) {
+            ToastHelper.warning(
+              context,
+              'Image upload failed. Changes will sync when online.',
+            );
+          }
+        }
+      } else if (_userData['profileImageUrl'] == '') {
+        // Remove profile image
+        try {
+          await _userService.updateProfileImage(userId, null);
+        } catch (e) {
+          // Ignore if offline
+        }
+      }
+
+      // Update other profile fields in Firestore
+      try {
         await _userService.updateUserProfile(
           userId: userId,
           displayName: _nameController.text.trim(),
@@ -446,36 +582,46 @@ class _EditProfilePageState extends State<EditProfilePage> {
         );
 
         if (mounted) {
-          Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Profile updated successfully!'),
-              backgroundColor: AppTheme.accentGreen,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
+          ToastHelper.updateSuccess(context, itemName: 'Profile');
+          // Delay navigation to show toast
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted) {
+              Navigator.pop(context);
+            }
+          });
+        }
+      } catch (firestoreError) {
+        // If Firestore update fails (offline), still show success for Auth update
+        if (mounted) {
+          ToastHelper.warning(
+            context,
+            'Profile saved locally. Will sync when online.',
           );
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted) {
+              Navigator.pop(context);
+            }
+          });
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error updating profile: ${e.toString()}'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        );
+        if (e.toString().contains('network') ||
+            e.toString().contains('offline') ||
+            e.toString().contains('UNAVAILABLE')) {
+          ToastHelper.warning(
+            context,
+            'You are offline. Changes will sync when online.',
+          );
+        } else {
+          ToastHelper.error(context, 'Failed to save: ${e.toString()}');
+        }
       }
     } finally {
       if (mounted) {
         setState(() {
           _isLoading = false;
+          _isUploadingImage = false;
         });
       }
     }

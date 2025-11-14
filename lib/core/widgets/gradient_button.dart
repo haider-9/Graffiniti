@@ -4,20 +4,20 @@ import '../theme/app_theme.dart';
 class GradientButton extends StatelessWidget {
   final String text;
   final VoidCallback onPressed;
-  final LinearGradient? gradient;
+  final IconData? icon;
   final double? width;
   final double height;
-  final IconData? icon;
+  final EdgeInsetsGeometry? padding;
   final bool isLoading;
 
   const GradientButton({
     super.key,
     required this.text,
     required this.onPressed,
-    this.gradient,
+    this.icon,
     this.width,
     this.height = 50,
-    this.icon,
+    this.padding,
     this.isLoading = false,
   });
 
@@ -27,13 +27,12 @@ class GradientButton extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        gradient: gradient ?? AppTheme.primaryGradient,
+        gradient: AppTheme.primaryGradient,
         borderRadius: BorderRadius.circular(25),
         boxShadow: [
           BoxShadow(
-            color: (gradient?.colors.first ?? AppTheme.accentOrange)
-                .withOpacity(0.3),
-            blurRadius: 12,
+            color: AppTheme.accentOrange.withValues(alpha: 0.3),
+            blurRadius: 8,
             offset: const Offset(0, 4),
           ),
         ],
@@ -44,9 +43,12 @@ class GradientButton extends StatelessWidget {
           onTap: isLoading ? null : onPressed,
           borderRadius: BorderRadius.circular(25),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding:
+                padding ??
+                const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 if (isLoading)
                   const SizedBox(
@@ -59,7 +61,7 @@ class GradientButton extends StatelessWidget {
                   )
                 else ...[
                   if (icon != null) ...[
-                    Icon(icon, color: Colors.white, size: 20),
+                    Icon(icon, color: Colors.white, size: 18),
                     const SizedBox(width: 8),
                   ],
                   Text(

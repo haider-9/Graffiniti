@@ -5,40 +5,44 @@ class GlassmorphicContainer extends StatelessWidget {
   final Widget child;
   final double width;
   final double height;
-  final BorderRadius? borderRadius;
+  final BorderRadius borderRadius;
+  final Color? backgroundColor;
   final double blur;
   final double opacity;
-  final Color? color;
+  final Border? border;
 
   const GlassmorphicContainer({
     super.key,
     required this.child,
     required this.width,
     required this.height,
-    this.borderRadius,
-    this.blur = 10,
+    required this.borderRadius,
+    this.backgroundColor,
+    this.blur = 10.0,
     this.opacity = 0.1,
-    this.color,
+    this.border,
   });
 
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: borderRadius ?? BorderRadius.circular(16),
+      borderRadius: borderRadius,
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
         child: Container(
           width: width,
           height: height,
           decoration: BoxDecoration(
-            color: color?.withOpacity(opacity) ?? Colors.white.withOpacity(opacity),
-            borderRadius: borderRadius ?? BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.2),
-              width: 1,
-            ),
+            color: backgroundColor ?? Colors.white.withValues(alpha: opacity),
+            borderRadius: borderRadius,
+            border:
+                border ??
+                Border.all(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  width: 1,
+                ),
           ),
-          child: child,
+          child: Center(child: child),
         ),
       ),
     );

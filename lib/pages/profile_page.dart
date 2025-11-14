@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
 import '../core/widgets/glassmorphic_container.dart';
 import '../core/widgets/gradient_button.dart';
+import 'edit_profile_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -156,7 +157,7 @@ class _ProfilePageState extends State<ProfilePage>
                         gradient: AppTheme.primaryGradient,
                         boxShadow: [
                           BoxShadow(
-                            color: AppTheme.accentOrange.withOpacity(0.4),
+                            color: AppTheme.accentOrange.withValues(alpha: 0.4),
                             blurRadius: 20,
                             offset: const Offset(0, 8),
                           ),
@@ -285,7 +286,12 @@ class _ProfilePageState extends State<ProfilePage>
             child: GradientButton(
               text: 'Edit Profile',
               onPressed: () {
-                // Edit profile
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const EditProfilePage(),
+                  ),
+                );
               },
               icon: Icons.edit,
             ),
@@ -386,10 +392,10 @@ class _ProfilePageState extends State<ProfilePage>
             decoration: BoxDecoration(
               color: AppTheme.secondaryBlack,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withOpacity(0.1)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
               boxShadow: [
                 BoxShadow(
-                  color: graffiti['color'].withOpacity(0.2),
+                  color: graffiti['color'].withValues(alpha: 0.2),
                   blurRadius: 8,
                   offset: const Offset(0, 4),
                 ),
@@ -404,8 +410,8 @@ class _ProfilePageState extends State<ProfilePage>
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          graffiti['color'].withOpacity(0.3),
-                          graffiti['color'].withOpacity(0.1),
+                          graffiti['color'].withValues(alpha: 0.3),
+                          graffiti['color'].withValues(alpha: 0.1),
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,

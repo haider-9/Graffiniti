@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/toast_helper.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -45,11 +46,12 @@ class _SignUpPageState extends State<SignUpPage> {
       );
 
       // Navigation handled automatically by AuthWrapper
+      if (mounted) {
+        ToastHelper.success(context, 'Account created successfully!');
+      }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
-        );
+        ToastHelper.authError(context, e);
       }
     } finally {
       if (mounted) {

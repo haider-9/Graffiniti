@@ -1,9 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:io';
 
 class UserService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
 
   // Get current user ID
   String? get currentUserId => _auth.currentUser?.uid;
@@ -13,16 +16,25 @@ class UserService {
     return _firestore.collection('users').doc(userId).snapshots();
   }
 
-  // Get user data once
+  // Get user data once (with offline support)
   Future<Map<String, dynamic>?> getUserData(String userId) async {
     try {
       DocumentSnapshot doc = await _firestore
           .collection('users')
           .doc(userId)
-          .get();
+          .get(const GetOptions(source: Source.serverAndCache));
       return doc.data() as Map<String, dynamic>?;
     } catch (e) {
-      throw Exception('Failed to get user data: ${e.toString()}');
+      // Try cache only if server fails
+      try {
+        DocumentSnapshot cachedDoc = await _firestore
+            .collection('users')
+            .doc(userId)
+            .get(const GetOptions(source: Source.cache));
+        return cachedDoc.data() as Map<String, dynamic>?;
+      } catch (cacheError) {
+        throw Exception('Failed to get user data: ${e.toString()}');
+      }
     }
   }
 
@@ -44,8 +56,9 @@ class UserService {
       if (bio != null) updateData['bio'] = bio;
       if (location != null) updateData['location'] = location;
       if (website != null) updateData['website'] = website;
-      if (profileImageUrl != null)
+      if (profileImageUrl != null) {
         updateData['profileImageUrl'] = profileImageUrl;
+      }
 
       await _firestore.collection('users').doc(userId).update(updateData);
 
@@ -175,5 +188,62 @@ class UserService {
         .doc(targetUserId)
         .snapshots()
         .map((doc) => doc.exists);
+  }
+
+  // Upload profile image to Firebase Storage
+  Future<String> uploadProfileImage(String userId, File imageFile) async {
+    try {
+      // Create a reference to the profile images folder
+      Reference ref = _storage
+          .ref()
+          .child('profile_images')
+          .child('$userId.jpg');
+
+      // Upload the file
+      UploadTask uploadTask = ref.putFile(imageFile);
+      TaskSnapshot snapshot = await uploadTask;
+
+      // Get the download URL
+      String downloadUrl = await snapshot.ref.getDownloadURL();
+      return downloadUrl;
+    } catch (e) {
+      throw Exception('Failed to upload image: ${e.toString()}');
+    }
+  }
+
+  // Delete profile image from Firebase Storage
+  Future<void> deleteProfileImage(String userId) async {
+    try {
+      Reference ref = _storage
+          .ref()
+          .child('profile_images')
+          .child('$userId.jpg');
+
+      await ref.delete();
+    } catch (e) {
+      // Image might not exist, which is fine
+      print('Error deleting profile image: $e');
+    }
+  }
+
+  // Update profile image
+  Future<void> updateProfileImage(String userId, File? imageFile) async {
+    try {
+      String? imageUrl;
+
+      if (imageFile != null) {
+        // Upload new image
+        imageUrl = await uploadProfileImage(userId, imageFile);
+      } else {
+        // Remove image
+        await deleteProfileImage(userId);
+        imageUrl = '';
+      }
+
+      // Update user document
+      await updateUserProfile(userId: userId, profileImageUrl: imageUrl);
+    } catch (e) {
+      throw Exception('Failed to update profile image: ${e.toString()}');
+    }
   }
 }

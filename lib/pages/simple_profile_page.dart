@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../core/theme/app_theme.dart';
 import '../core/widgets/gradient_button.dart';
+import '../core/utils/toast_helper.dart';
 import '../core/services/auth_service.dart';
 import '../core/services/user_service.dart';
 import 'settings_page.dart';
@@ -32,16 +33,12 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
     try {
       await _authService.signOut();
       if (mounted) {
+        ToastHelper.success(context, 'Logged out successfully');
         Navigator.of(context).pushReplacementNamed('/');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Logout failed: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        ToastHelper.genericError(context, e);
       }
     }
   }
@@ -144,9 +141,12 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
               }
 
               if (snapshot.hasError) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  ToastHelper.loadingError(context, itemName: 'profile');
+                });
                 return Center(
                   child: Text(
-                    'Error loading profile: ${snapshot.error}',
+                    'Error loading profile',
                     style: const TextStyle(color: Colors.white),
                   ),
                 );
@@ -247,7 +247,7 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
             gradient: AppTheme.primaryGradient,
             boxShadow: [
               BoxShadow(
-                color: AppTheme.accentOrange.withOpacity(0.4),
+                color: AppTheme.accentOrange.withValues(alpha: 0.4),
                 blurRadius: 20,
                 offset: const Offset(0, 8),
               ),
@@ -259,10 +259,32 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
               shape: BoxShape.circle,
               color: AppTheme.secondaryBlack,
             ),
-            child: const CircleAvatar(
-              radius: 47,
-              backgroundColor: Colors.transparent,
-              child: Icon(Icons.person, color: Colors.white, size: 48),
+            child: ClipOval(
+              child:
+                  userData['profileImageUrl'] != null &&
+                      userData['profileImageUrl'].toString().isNotEmpty
+                  ? Image.network(
+                      userData['profileImageUrl'],
+                      fit: BoxFit.cover,
+                      width: 94,
+                      height: 94,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const CircleAvatar(
+                          radius: 47,
+                          backgroundColor: Colors.transparent,
+                          child: Icon(
+                            Icons.person,
+                            color: Colors.white,
+                            size: 48,
+                          ),
+                        );
+                      },
+                    )
+                  : const CircleAvatar(
+                      radius: 47,
+                      backgroundColor: Colors.transparent,
+                      child: Icon(Icons.person, color: Colors.white, size: 48),
+                    ),
             ),
           ),
         ),
@@ -467,10 +489,10 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
       decoration: BoxDecoration(
         color: AppTheme.secondaryBlack,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
         boxShadow: [
           BoxShadow(
-            color: graffiti['color'].withOpacity(0.2),
+            color: graffiti['color'].withValues(alpha: 0.2),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -485,8 +507,8 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    graffiti['color'].withOpacity(0.3),
-                    graffiti['color'].withOpacity(0.1),
+                    graffiti['color'].withValues(alpha: 0.3),
+                    graffiti['color'].withValues(alpha: 0.1),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,

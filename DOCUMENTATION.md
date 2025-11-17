@@ -1174,7 +1174,7 @@ static const Color mutedText = Color(0xFF666666);
 
    ```dart
    // Replace withOpacity() calls
-   Colors.white.withOpacity(0.7) → Colors.white.withValues(alpha: 0.7)
+   Colors.white.withValues(alpha: 0.7) → Colors.white.withValues(alpha: 0.7)
    ```
 
 2. **Complete AR Integration**

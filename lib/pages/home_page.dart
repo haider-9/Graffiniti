@@ -64,7 +64,7 @@ class _HomePageState extends State<HomePage> {
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.08),
+                            color: Colors.black.withValues(alpha: 0.08),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -271,7 +271,7 @@ class _HomePageState extends State<HomePage> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -674,15 +674,15 @@ class _HomePageState extends State<HomePage> {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              color.withOpacity(0.2),
-              color.withOpacity(0.1),
+              color.withValues(alpha: 0.2),
+              color.withValues(alpha: 0.1),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: color.withOpacity(0.4),
+            color: color.withValues(alpha: 0.4),
             width: 1.5,
           ),
         ),
@@ -729,15 +729,15 @@ class _HomePageState extends State<HomePage> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            const Color(0xFF1E3A8A).withOpacity(0.2),
-            const Color(0xFF7B68EE).withOpacity(0.1),
+            const Color(0xFF1E3A8A).withValues(alpha: 0.2),
+            const Color(0xFF7B68EE).withValues(alpha: 0.1),
           ],
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
         ),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: const Color(0xFF00F5FF).withOpacity(0.2),
+          color: const Color(0xFF00F5FF).withValues(alpha: 0.2),
           width: 1,
         ),
       ),

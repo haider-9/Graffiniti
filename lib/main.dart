@@ -107,7 +107,7 @@ class _MainNavigationState extends State<MainNavigation> {
                   decoration: BoxDecoration(
                     color: _currentIndex == index
                         ? AppTheme.accentOrange
-                        : Colors.white.withOpacity(0.3),
+                        : Colors.white.withValues(alpha: 0.3),
                     shape: BoxShape.circle,
                   ),
                 );

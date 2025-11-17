@@ -279,7 +279,7 @@ class _CameraPageState extends State<CameraPage>
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.accentOrange.withOpacity(0.4),
+                    color: AppTheme.accentOrange.withValues(alpha: 0.4),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -343,7 +343,7 @@ class _CameraPageState extends State<CameraPage>
                           : LinearGradient(
                               colors: [
                                 Colors.white,
-                                Colors.white.withOpacity(0.8),
+                                Colors.white.withValues(alpha: 0.8),
                               ],
                             ),
                       boxShadow: [
@@ -352,7 +352,7 @@ class _CameraPageState extends State<CameraPage>
                               (_selectedMode == 1
                                       ? AppTheme.accentOrange
                                       : Colors.white)
-                                  .withOpacity(0.4),
+                                  .withValues(alpha: 0.4),
                           blurRadius: 16,
                           offset: const Offset(0, 4),
                         ),
@@ -401,7 +401,7 @@ class _CameraPageState extends State<CameraPage>
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.accentOrange.withOpacity(0.3),
+                    color: AppTheme.accentOrange.withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),

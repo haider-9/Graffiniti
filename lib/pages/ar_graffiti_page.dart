@@ -223,7 +223,7 @@ class _ARGraffitiPageState extends State<ARGraffitiPage>
                 boxShadow: [
                   BoxShadow(
                     color: (_showTools ? AppTheme.accentOrange : Colors.black)
-                        .withOpacity(0.3),
+                        .withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -296,7 +296,7 @@ class _ARGraffitiPageState extends State<ARGraffitiPage>
                 border: Border.all(color: Colors.white, width: 2),
                 boxShadow: [
                   BoxShadow(
-                    color: _selectedColor.withOpacity(0.4),
+                    color: _selectedColor.withValues(alpha: 0.4),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -353,7 +353,7 @@ class _ARGraffitiPageState extends State<ARGraffitiPage>
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.2),
+                color: Colors.red.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(25),
                 border: Border.all(color: Colors.red, width: 1),
               ),
@@ -408,7 +408,7 @@ class _ARGraffitiPageState extends State<ARGraffitiPage>
                   border: Border.all(color: Colors.white24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
+                      color: Colors.black.withValues(alpha: 0.3),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),

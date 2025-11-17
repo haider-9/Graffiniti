@@ -72,27 +72,17 @@ class _LoginPageState extends State<LoginPage> {
               children: [
                 // Logo
                 Container(
-                  height: 120,
+                  height: 280,
                   width: 120,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.accentOrange.withValues(alpha: 0.3),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
+                  transform: Matrix4.rotationZ(-0.05),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(20),
                     child: Image.asset(
-                      'assets/images/logo.jpg',
-                      fit: BoxFit.cover,
+                      'assets/icons/spray.png',
+                      fit: BoxFit.contain,
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
                 Text(
                   'Welcome back',
                   style: TextStyle(

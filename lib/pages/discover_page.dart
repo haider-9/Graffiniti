@@ -146,7 +146,7 @@ class _DiscoverPageState extends State<DiscoverPage>
                     borderRadius: BorderRadius.circular(22),
                     boxShadow: [
                       BoxShadow(
-                        color: AppTheme.accentOrange.withOpacity(0.3),
+                        color: AppTheme.accentOrange.withValues(alpha: 0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -237,10 +237,10 @@ class _DiscoverPageState extends State<DiscoverPage>
             decoration: BoxDecoration(
               color: AppTheme.secondaryBlack,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white.withOpacity(0.1)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
               boxShadow: [
                 BoxShadow(
-                  color: graffiti['color'].withOpacity(0.2),
+                  color: graffiti['color'].withValues(alpha: 0.2),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -255,8 +255,8 @@ class _DiscoverPageState extends State<DiscoverPage>
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        graffiti['color'].withOpacity(0.3),
-                        graffiti['color'].withOpacity(0.1),
+                        graffiti['color'].withValues(alpha: 0.3),
+                        graffiti['color'].withValues(alpha: 0.1),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -337,7 +337,7 @@ class _DiscoverPageState extends State<DiscoverPage>
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: graffiti['color'].withOpacity(0.2),
+                              color: graffiti['color'].withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(

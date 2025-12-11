@@ -205,7 +205,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               decoration: BoxDecoration(
                 color: AppTheme.accentGray,
                 borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: Colors.white24),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
               ),
               child: const Icon(
                 Icons.arrow_back,
@@ -482,7 +482,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
           const SizedBox(height: 8),
           Text(
             label,
-            style: const TextStyle(color: AppTheme.secondaryText, fontSize: 12),
+            style: TextStyle(color: AppTheme.secondaryText, fontSize: 12),
           ),
         ],
       ),
@@ -536,10 +536,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         return;
       }
 
-      // Update Firebase Auth display name first (works offline)
-      if (_nameController.text.trim() != _auth.currentUser?.displayName) {
-        await _auth.currentUser?.updateDisplayName(_nameController.text.trim());
-      }
+      String? profileImageUrl;
 
       // Try to update profile image if changed (requires internet)
       if (_selectedImage != null) {
@@ -547,7 +544,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
           setState(() {
             _isUploadingImage = true;
           });
-          await _userService.updateProfileImage(userId, _selectedImage);
+          profileImageUrl = await _userService.updateProfileImage(userId, _selectedImage);
           setState(() {
             _isUploadingImage = false;
           });
@@ -558,20 +555,25 @@ class _EditProfilePageState extends State<EditProfilePage> {
           if (mounted) {
             ToastHelper.warning(
               context,
-              'Image upload failed. Changes will sync when online.',
+              'Image upload failed. Other changes will be saved.',
             );
           }
         }
       } else if (_userData['profileImageUrl'] == '') {
         // Remove profile image
         try {
-          await _userService.updateProfileImage(userId, null);
+          profileImageUrl = await _userService.updateProfileImage(userId, null);
         } catch (e) {
           // Ignore if offline
         }
       }
 
-      // Update other profile fields in Firestore
+      // Update Firebase Auth display name first (works offline)
+      if (_nameController.text.trim() != _auth.currentUser?.displayName) {
+        await _auth.currentUser?.updateDisplayName(_nameController.text.trim());
+      }
+
+      // Update all profile fields in Firestore in a single call
       try {
         await _userService.updateUserProfile(
           userId: userId,
@@ -579,16 +581,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
           bio: _bioController.text.trim(),
           location: _locationController.text.trim(),
           website: _websiteController.text.trim(),
+          profileImageUrl: profileImageUrl,
         );
 
         if (mounted) {
           ToastHelper.updateSuccess(context, itemName: 'Profile');
           // Delay navigation to show toast
-          Future.delayed(const Duration(milliseconds: 500), () {
-            if (mounted) {
-              Navigator.pop(context);
-            }
-          });
+          await Future.delayed(const Duration(milliseconds: 500));
+          if (mounted) {
+            Navigator.pop(context, true); // Return true to indicate success
+          }
         }
       } catch (firestoreError) {
         // If Firestore update fails (offline), still show success for Auth update
@@ -597,11 +599,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
             context,
             'Profile saved locally. Will sync when online.',
           );
-          Future.delayed(const Duration(milliseconds: 500), () {
-            if (mounted) {
-              Navigator.pop(context);
-            }
-          });
+          await Future.delayed(const Duration(milliseconds: 500));
+          if (mounted) {
+            Navigator.pop(context, true);
+          }
         }
       }
     } catch (e) {

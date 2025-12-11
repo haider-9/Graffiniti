@@ -113,7 +113,7 @@ class _DiscoverPageState extends State<DiscoverPage>
               const SizedBox(height: 4),
               const Text(
                 'Explore AR graffiti around you',
-                style: TextStyle(color: AppTheme.secondaryText, fontSize: 16),
+                style: TextStyle(color: AppTheme.secondaryText, fontSize: 12),
               ),
             ],
           ),
@@ -177,9 +177,8 @@ class _DiscoverPageState extends State<DiscoverPage>
         ),
         indicatorSize: TabBarIndicatorSize.tab,
         dividerColor: Colors.transparent,
-        labelColor: Colors.white,
         unselectedLabelColor: AppTheme.secondaryText,
-        labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
         tabs: _tabs.map((tab) => Tab(text: tab)).toList(),
       ),
     );

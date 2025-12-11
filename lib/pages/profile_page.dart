@@ -11,9 +11,7 @@ class ProfilePage extends StatefulWidget {
   State<ProfilePage> createState() => _ProfilePageState();
 }
 
-class _ProfilePageState extends State<ProfilePage>
-    with TickerProviderStateMixin {
-  late AnimationController _animationController;
+class _ProfilePageState extends State<ProfilePage> {
   int _tabIndex = 0;
   final List<String> _tabs = ['Graffiti', 'Saved', 'Liked'];
 
@@ -48,21 +46,7 @@ class _ProfilePageState extends State<ProfilePage>
     },
   ];
 
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
-    _animationController.forward();
-  }
 
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,14 +55,14 @@ class _ProfilePageState extends State<ProfilePage>
       body: Container(
         decoration: const BoxDecoration(gradient: AppTheme.backgroundGradient),
         child: SafeArea(
-          child: Column(
-            children: [
-              _buildHeader(),
-              _buildProfileInfo(),
-              _buildStats(),
-              _buildActionButtons(),
-              _buildTabBar(),
-              Expanded(child: _buildContent()),
+          child: CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(child: _buildHeader()),
+              SliverToBoxAdapter(child: _buildProfileInfo()),
+              SliverToBoxAdapter(child: _buildStats()),
+              SliverToBoxAdapter(child: _buildActionButtons()),
+              SliverToBoxAdapter(child: _buildTabBar()),
+              _buildContent(),
             ],
           ),
         ),
@@ -137,109 +121,98 @@ class _ProfilePageState extends State<ProfilePage>
   }
 
   Widget _buildProfileInfo() {
-    return AnimatedBuilder(
-      animation: _animationController,
-      builder: (context, child) {
-        return Transform.translate(
-          offset: Offset(0, 50 * (1 - _animationController.value)),
-          child: Opacity(
-            opacity: _animationController.value,
-            child: Column(
-              children: [
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: AppTheme.primaryGradient,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.accentOrange.withValues(alpha: 0.4),
-                            blurRadius: 20,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: Container(
-                        margin: const EdgeInsets.all(3),
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppTheme.secondaryBlack,
-                        ),
-                        child: const CircleAvatar(
-                          radius: 47,
-                          backgroundColor: Colors.transparent,
-                          child: Icon(
-                            Icons.person,
-                            color: Colors.white,
-                            size: 48,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 8,
-                      right: 8,
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          gradient: AppTheme.accentGradient,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: AppTheme.primaryBlack,
-                            width: 2,
-                          ),
-                        ),
-                        child: const Icon(
-                          Icons.verified,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                      ),
-                    ),
-                  ],
+    return Column(
+      children: [
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: AppTheme.primaryGradient,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.accentOrange.withValues(alpha: 0.4),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Container(
+                margin: const EdgeInsets.all(3),
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppTheme.secondaryBlack,
                 ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Alex Rivera',
-                  style: TextStyle(
+                child: const CircleAvatar(
+                  radius: 47,
+                  backgroundColor: Colors.transparent,
+                  child: Icon(
+                    Icons.person,
                     color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
+                    size: 48,
                   ),
                 ),
-                const SizedBox(height: 4),
-                const Text(
-                  '@alexrivera_art',
-                  style: TextStyle(color: AppTheme.secondaryText, fontSize: 16),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: AppTheme.primaryGradient,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text(
-                    'AR Artist',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
+              ),
+            ),
+            Positioned(
+              bottom: 8,
+              right: 8,
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  gradient: AppTheme.accentGradient,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppTheme.primaryBlack,
+                    width: 2,
                   ),
                 ),
-              ],
+                child: const Icon(
+                  Icons.verified,
+                  color: Colors.white,
+                  size: 16,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          'Alex Rivera',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          '@alexrivera_art',
+          style: TextStyle(color: AppTheme.secondaryText, fontSize: 16),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 4,
+          ),
+          decoration: BoxDecoration(
+            gradient: AppTheme.primaryGradient,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Text(
+            'AR Artist',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
             ),
           ),
-        );
-      },
+        ),
+      ],
     );
   }
 
@@ -352,163 +325,145 @@ class _ProfilePageState extends State<ProfilePage>
   }
 
   Widget _buildContent() {
-    return Padding(
+    return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: GridView.builder(
-        itemCount: _userGraffiti.length,
+      sliver: SliverGrid(
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
           childAspectRatio: 0.8,
         ),
-        itemBuilder: (context, index) {
-          final graffiti = _userGraffiti[index];
-          return _buildGraffitiItem(graffiti, index);
-        },
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final graffiti = _userGraffiti[index];
+            return _buildGraffitiItem(graffiti, index);
+          },
+          childCount: _userGraffiti.length,
+        ),
       ),
     );
   }
 
   Widget _buildGraffitiItem(Map<String, dynamic> graffiti, int index) {
-    return AnimatedBuilder(
-      animation: _animationController,
-      builder: (context, child) {
-        final slideAnimation =
-            Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero).animate(
-              CurvedAnimation(
-                parent: _animationController,
-                curve: Interval(
-                  (0.2 + (index * 0.1)).clamp(0.0, 0.8),
-                  (0.6 + (index * 0.1)).clamp(0.2, 1.0),
-                  curve: Curves.easeOutCubic,
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.secondaryBlack,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        boxShadow: [
+          BoxShadow(
+            color: graffiti['color'].withValues(alpha: 0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Graffiti preview
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    graffiti['color'].withValues(alpha: 0.3),
+                    graffiti['color'].withValues(alpha: 0.1),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
                 ),
               ),
-            );
-
-        return SlideTransition(
-          position: slideAnimation,
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppTheme.secondaryBlack,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-              boxShadow: [
-                BoxShadow(
-                  color: graffiti['color'].withValues(alpha: 0.2),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.view_in_ar,
+                      size: 32,
+                      color: graffiti['color'],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      graffiti['title'],
+                      style: TextStyle(
+                        color: graffiti['color'],
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
+          ),
+
+          // Graffiti info
+          Padding(
+            padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Graffiti preview
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          graffiti['color'].withValues(alpha: 0.3),
-                          graffiti['color'].withValues(alpha: 0.1),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(16),
-                        topRight: Radius.circular(16),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.location_on_outlined,
+                      size: 14,
+                      color: AppTheme.secondaryText,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        graffiti['location'],
+                        style: const TextStyle(
+                          color: AppTheme.secondaryText,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.view_in_ar,
-                            size: 32,
-                            color: graffiti['color'],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            graffiti['title'],
-                            style: TextStyle(
-                              color: graffiti['color'],
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                  ],
                 ),
-
-                // Graffiti info
-                Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.location_on_outlined,
-                            size: 14,
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.favorite,
+                          size: 14,
+                          color: AppTheme.accentRed,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${graffiti['likes']}',
+                          style: const TextStyle(
                             color: AppTheme.secondaryText,
+                            fontSize: 12,
                           ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              graffiti['location'],
-                              style: const TextStyle(
-                                color: AppTheme.secondaryText,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
+                      ],
+                    ),
+                    Text(
+                      graffiti['time'],
+                      style: const TextStyle(
+                        color: AppTheme.mutedText,
+                        fontSize: 10,
                       ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.favorite,
-                                size: 14,
-                                color: AppTheme.accentRed,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${graffiti['likes']}',
-                                style: const TextStyle(
-                                  color: AppTheme.secondaryText,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Text(
-                            graffiti['time'],
-                            style: const TextStyle(
-                              color: AppTheme.mutedText,
-                              fontSize: 10,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 }

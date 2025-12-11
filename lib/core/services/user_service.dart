@@ -19,22 +19,35 @@ class UserService {
   // Get user data once (with offline support)
   Future<Map<String, dynamic>?> getUserData(String userId) async {
     try {
+      // Try cache first for faster loading
+      DocumentSnapshot cachedDoc = await _firestore
+          .collection('users')
+          .doc(userId)
+          .get(const GetOptions(source: Source.cache));
+      
+      if (cachedDoc.exists) {
+        // Return cached data immediately, then fetch fresh data in background
+        _firestore
+            .collection('users')
+            .doc(userId)
+            .get(const GetOptions(source: Source.server))
+            .catchError((_) {}); // Ignore errors for background fetch
+        
+        return cachedDoc.data() as Map<String, dynamic>?;
+      }
+    } catch (_) {
+      // Cache miss, continue to server fetch
+    }
+
+    // If no cache, fetch from server
+    try {
       DocumentSnapshot doc = await _firestore
           .collection('users')
           .doc(userId)
-          .get(const GetOptions(source: Source.serverAndCache));
+          .get(const GetOptions(source: Source.server));
       return doc.data() as Map<String, dynamic>?;
     } catch (e) {
-      // Try cache only if server fails
-      try {
-        DocumentSnapshot cachedDoc = await _firestore
-            .collection('users')
-            .doc(userId)
-            .get(const GetOptions(source: Source.cache));
-        return cachedDoc.data() as Map<String, dynamic>?;
-      } catch (cacheError) {
-        throw Exception('Failed to get user data: ${e.toString()}');
-      }
+      throw Exception('Failed to get user data: ${e.toString()}');
     }
   }
 
@@ -60,7 +73,11 @@ class UserService {
         updateData['profileImageUrl'] = profileImageUrl;
       }
 
-      await _firestore.collection('users').doc(userId).update(updateData);
+      // Use set with merge to create document if it doesn't exist
+      await _firestore.collection('users').doc(userId).set(
+        updateData,
+        SetOptions(merge: true),
+      );
 
       // Update Firebase Auth display name if provided
       if (displayName != null && _auth.currentUser != null) {
@@ -227,7 +244,7 @@ class UserService {
   }
 
   // Update profile image
-  Future<void> updateProfileImage(String userId, File? imageFile) async {
+  Future<String?> updateProfileImage(String userId, File? imageFile) async {
     try {
       String? imageUrl;
 
@@ -240,8 +257,13 @@ class UserService {
         imageUrl = '';
       }
 
-      // Update user document
-      await updateUserProfile(userId: userId, profileImageUrl: imageUrl);
+      // Update user document with just the image URL
+      await _firestore.collection('users').doc(userId).update({
+        'profileImageUrl': imageUrl,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      return imageUrl;
     } catch (e) {
       throw Exception('Failed to update profile image: ${e.toString()}');
     }

@@ -161,8 +161,6 @@ class _SettingsPageState extends State<SettingsPage> {
                         },
                       ),
                     ]),
-                    const SizedBox(height: 32),
-                    _buildLogoutButton(),
                   ],
                 ),
               ),
@@ -186,9 +184,9 @@ class _SettingsPageState extends State<SettingsPage> {
               decoration: BoxDecoration(
                 color: AppTheme.accentGray,
                 borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: Colors.white24),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.arrow_back,
                 color: Colors.white,
                 size: 20,
@@ -196,7 +194,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ),
           const SizedBox(width: 16),
-          const Text(
+          Text(
             'Settings',
             style: TextStyle(
               color: Colors.white,
@@ -261,7 +259,7 @@ class _SettingsPageState extends State<SettingsPage> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -270,7 +268,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppTheme.secondaryText,
                     fontSize: 12,
                   ),
@@ -281,8 +279,8 @@ class _SettingsPageState extends State<SettingsPage> {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: AppTheme.accentOrange,
-            inactiveThumbColor: Colors.white54,
+            activeThumbColor: AppTheme.accentOrange,
+            inactiveThumbColor: AppTheme.secondaryText,
             inactiveTrackColor: AppTheme.accentGray,
           ),
         ],
@@ -319,7 +317,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
@@ -328,7 +326,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppTheme.secondaryText,
                         fontSize: 12,
                       ),
@@ -397,7 +395,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppTheme.secondaryText,
                       fontSize: 12,
                     ),
@@ -405,7 +403,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 ],
               ),
             ),
-            const Icon(
+            Icon(
               Icons.arrow_forward_ios,
               color: AppTheme.secondaryText,
               size: 16,
@@ -416,43 +414,10 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildLogoutButton() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.red.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
-      ),
-      child: InkWell(
-        onTap: () {
-          _showLogoutDialog();
-        },
-        borderRadius: BorderRadius.circular(16),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.logout, color: Colors.red, size: 20),
-            SizedBox(width: 8),
-            Text(
-              'Log Out',
-              style: TextStyle(
-                color: Colors.red,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   void _showAboutDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: AppTheme.secondaryBlack,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
@@ -479,10 +444,10 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ),
             const SizedBox(width: 12),
-            const Text('Griffiniti', style: TextStyle(color: Colors.white)),
+            Text('Griffiniti', style: TextStyle(color: Colors.white)),
           ],
         ),
-        content: const Column(
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -490,12 +455,12 @@ class _SettingsPageState extends State<SettingsPage> {
               'Version 1.0.0',
               style: TextStyle(color: AppTheme.secondaryText),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
               'AR Graffiti App for creating digital street art in augmented reality.',
               style: TextStyle(color: AppTheme.secondaryText),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Text(
               '© 2024 Griffiniti. All rights reserved.',
               style: TextStyle(color: AppTheme.mutedText, fontSize: 12),
@@ -504,7 +469,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text(
               'Close',
               style: TextStyle(color: AppTheme.accentOrange),
@@ -518,25 +483,25 @@ class _SettingsPageState extends State<SettingsPage> {
   void _showLogoutDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: AppTheme.secondaryBlack,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Log Out', style: TextStyle(color: Colors.white)),
-        content: const Text(
+        title: Text('Log Out', style: TextStyle(color: Colors.white)),
+        content: Text(
           'Are you sure you want to log out of your account?',
           style: TextStyle(color: AppTheme.secondaryText),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(
               'Cancel',
               style: TextStyle(color: AppTheme.secondaryText),
             ),
           ),
           TextButton(
             onPressed: () {
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
               // Perform logout
             },
             child: const Text('Log Out', style: TextStyle(color: Colors.red)),

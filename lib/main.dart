@@ -7,7 +7,9 @@ import 'core/theme/app_theme.dart';
 import 'core/auth/auth_wrapper.dart';
 import 'pages/camera_page.dart';
 import 'pages/discover_page.dart';
+import 'pages/communities_page.dart';
 import 'pages/simple_profile_page.dart';
+import 'core/widgets/custom_bottom_navigation.dart';
 
 List<CameraDescription> cameras = [];
 
@@ -55,11 +57,12 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation> {
   late PageController _pageController;
-  int _currentIndex = 1; // Start with camera page (Snapchat style)
+  int _currentIndex = 0;
 
   final List<Widget> _pages = [
     const DiscoverPage(),
     const CameraPage(),
+    const CommunitiesPage(),
     const SimpleProfilePage(),
   ];
 
@@ -85,36 +88,16 @@ class _MainNavigationState extends State<MainNavigation> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.primaryBlack,
-      body: Stack(
-        children: [
-          PageView(
-            controller: _pageController,
-            onPageChanged: _onPageChanged,
-            children: _pages,
-          ),
-          // Page indicator
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 16,
-            left: 0,
-            right: 0,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(_pages.length, (index) {
-                return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: _currentIndex == index
-                        ? AppTheme.accentOrange
-                        : Colors.white.withValues(alpha: 0.3),
-                    shape: BoxShape.circle,
-                  ),
-                );
-              }),
-            ),
-          ),
-        ],
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: _onPageChanged,
+        children: _pages,
+      ),
+      bottomNavigationBar: CustomBottomNavigation(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          _pageController.jumpToPage(index);
+        },
       ),
     );
   }

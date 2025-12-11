@@ -242,7 +242,33 @@ The app follows a **layered architecture** with clear separation of concerns:
 - **Sticker Tool**: Pre-made graffiti elements
 - **Text Tool**: Typography and lettering
 
-### 4. Discovery System
+### 4. Communities System
+
+- **Community Discovery**: Browse and join art communities
+- **Feed System**: View posts from joined communities with filtering
+- **Social Interactions**: Like, comment, and save posts
+- **Community Management**: Join/leave communities with member counts
+- **Post Cards**: Instagram-style post display with interactions
+
+**Key Features:**
+
+- Two-tab interface (Feed & Discover)
+- Filter posts by specific communities
+- Real-time like and save interactions
+- Community cards with cover images and tags
+- Time-ago formatting for posts
+- Member count display with K notation
+
+**Files:**
+
+- `lib/pages/communities_page.dart` - Main communities interface
+- `lib/widgets/community_card.dart` - Community display component
+- `lib/widgets/community_post_card.dart` - Post display component
+- `lib/models/community.dart` - Community data model
+- `lib/models/community_post.dart` - Post data model
+- `lib/data/dummy_communities.dart` - Sample data (6 communities, 8 posts)
+
+### 5. Discovery System
 
 - **Nearby Graffiti**: Location-based content discovery
 - **Trending Content**: Popular artwork from the community
@@ -253,7 +279,31 @@ The app follows a **layered architecture** with clear separation of concerns:
 
 - `lib/pages/discover_page.dart` - Content discovery interface
 
-### 5. Profile System
+### 6. Camera Save & Permissions System
+
+- **Permission Management**: Automatic camera and storage permission requests
+- **Media Saving**: Save photos and videos to device gallery
+- **Enhanced Preview**: Preview screen with save, edit, share, delete actions
+- **Platform Support**: Android 13+ and older versions compatibility
+- **User Feedback**: Toast notifications for success/error states
+
+**Key Features:**
+
+- Automatic permission requests on app launch
+- Storage permission handling (Android 13+ uses READ_MEDIA_IMAGES/VIDEO)
+- Save to platform-specific directories (Pictures/Movies folders)
+- Unique timestamped filenames
+- Loading states during save operations
+- Permission denied dialogs with settings navigation
+- Temporary file cleanup
+
+**Files:**
+
+- `lib/core/utils/permission_helper.dart` - Permission management utility
+- `lib/core/services/media_service.dart` - Media saving service
+- `lib/pages/camera_page.dart` - Enhanced with save functionality
+
+### 7. Profile System
 
 - **User Profiles**: Artist portfolios and statistics
 - **Social Stats**: Followers, following, and graffiti count
@@ -282,11 +332,12 @@ The app follows a **layered architecture** with clear separation of concerns:
 - **Firebase Auth 5.3.1**: User authentication
 - **Cloud Firestore 5.4.3**: NoSQL database
 
-### Camera & AR
+### Camera & Media
 
 - **Camera Plugin 0.10.5+9**: Camera functionality
 - **Path Provider 2.1.1**: File system access
 - **Permission Handler 11.0.1**: Runtime permissions
+- **Image Picker 1.0.4**: Image selection and capture
 
 ### UI & Graphics
 
@@ -373,9 +424,78 @@ The app follows a **layered architecture** with clear separation of concerns:
 
 ---
 
-## 📊 Results & Analysis
+## 🆕 Recent Feature Additions
 
-### Key Achievements
+### Communities Feature (December 2024)
+
+A complete social platform for artists to discover, join, and interact with art communities.
+
+**Implementation Details:**
+
+- **Two-Tab Interface**: Feed and Discover tabs with smooth transitions
+- **Community Cards**: Modern cards with cover images, member counts, and tags
+- **Post Interactions**: Like (with double-tap), save, and comment (UI ready)
+- **Smart Filtering**: Filter feed by specific joined communities
+- **Dummy Data**: 6 sample communities and 8 posts for demonstration
+
+**Technical Stack:**
+
+- Custom widgets for reusable components
+- State management for real-time interactions
+- Time-ago formatting for post timestamps
+- Gradient accents matching app theme
+
+**Files Created:**
+
+```
+lib/
+├── models/
+│   ├── community.dart
+│   └── community_post.dart
+├── data/
+│   └── dummy_communities.dart
+├── pages/
+│   └── communities_page.dart
+└── widgets/
+    ├── community_card.dart
+    └── community_post_card.dart
+```
+
+### Camera Save Feature (December 2024)
+
+Complete permission handling and media saving system for photos and videos.
+
+**Implementation Details:**
+
+- **Permission Management**: Automatic requests for camera, storage, and microphone
+- **Platform Compatibility**: Android 13+ and older versions support
+- **Save Locations**: Platform-specific directories (Pictures/Movies)
+- **Enhanced Preview**: Save, edit, share, and delete actions
+- **User Feedback**: Toast notifications and loading states
+
+**Permission Handling:**
+
+- Camera permission for photo/video capture
+- Storage permission (READ_MEDIA_IMAGES/VIDEO for Android 13+)
+- Microphone permission for video recording
+- Permission denied dialogs with settings navigation
+
+**Technical Stack:**
+
+- Permission Handler plugin for runtime permissions
+- Path Provider for file system access
+- Custom media service for save operations
+- Toast notifications for user feedback
+
+**Files Created:**
+
+```
+lib/
+├── core/
+│   ├── utils/
+│   │   └── permission_helper.dart
+│   └── services/
+│       └
 
 #### Technical Implementation
 
@@ -388,6 +508,8 @@ The app follows a **layered architecture** with clear separation of concerns:
 
 - ✅ User authentication and profile management
 - ✅ Camera system with multiple modes
+- ✅ Camera save functionality with permissions
+- ✅ Communities page with social interactions
 - ✅ AR graffiti creation interface (UI implementation)
 - ✅ Content discovery and social features (UI framework)
 - ✅ Location-based services integration
@@ -1165,8 +1287,9 @@ static const Color mutedText = Color(0xFF666666);
 3. **Incomplete Features**
    - Forgot password functionality (marked as TODO)
    - AR camera integration (placeholder implementation)
-   - Video recording functionality
-   - Gallery integration
+   - Comment functionality in communities (UI ready)
+   - Share functionality in camera preview (UI ready)
+   - Edit functionality in camera preview (UI ready)
 
 ### Priority TODOs
 
@@ -1203,17 +1326,20 @@ static const Color mutedText = Color(0xFF666666);
 
 - ✅ Basic UI structure
 - ✅ Authentication system
-- ✅ Camera interface
+- ✅ Camera interface with save functionality
+- ✅ Communities page with social interactions
+- ✅ Permission management system
 - 🔄 AR graffiti creation
 - 🔄 Content discovery
 
 ### Phase 2: Enhanced Features
 
 - **Real AR Integration**: ARCore/ARKit implementation
-- **Social Features**: Following, likes, comments
-- **Content Management**: Save, share, delete graffiti
+- **Social Features**: Following system, comment implementation
+- **Content Management**: Share and edit functionality
 - **Location Services**: GPS-based content placement
 - **Push Notifications**: Social interactions and updates
+- **Firebase Integration**: Connect communities to real backend data
 
 ### Phase 3: Advanced Features
 
@@ -1256,7 +1382,13 @@ flutter run
 ```xml
 <!-- Add to android/app/src/main/AndroidManifest.xml -->
 <uses-permission android:name="android.permission.CAMERA" />
-<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+<uses-permission android:name="android.permission.RECORD_AUDIO" />
+<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" 
+    android:maxSdkVersion="32" />
+<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" 
+    android:maxSdkVersion="32" />
+<uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+<uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
 ```
 
 **4. Asset Loading Issues**

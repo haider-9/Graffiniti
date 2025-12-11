@@ -56,7 +56,7 @@ Griffiniti embraces an **elegant graffiti aesthetic** with:
 The app opens directly to the camera interface, encouraging immediate creation and exploration. Users can:
 - **Swipe left** to discover nearby graffiti
 - **Swipe right** to access their profile
-- **Tap modes** to switch between Photo, AR Graffiti, and Video
+- **Tap modes** to switch between Photo and AR Graffiti
 - **Use gestures** for intuitive tool selection
 
 ### Elegant Interactions

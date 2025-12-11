@@ -70,7 +70,7 @@ class _SignUpPageState extends State<SignUpPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -83,29 +83,6 @@ class _SignUpPageState extends State<SignUpPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Logo
-                  Container(
-                    height: 100,
-                    width: 100,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.accentOrange.withValues(alpha: 0.3),
-                          blurRadius: 15,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Image.asset(
-                        'assets/images/logo.jpg',
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
                   Text(
                     'Create Account',
                     style: TextStyle(
@@ -124,7 +101,7 @@ class _SignUpPageState extends State<SignUpPage> {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 32),
 
                   // Name field
                   TextFormField(
@@ -307,7 +284,7 @@ class _SignUpPageState extends State<SignUpPage> {
                               ),
                             ),
                           )
-                        : const Text(
+                        : Text(
                             'Create Account',
                             style: TextStyle(
                               fontSize: 16,

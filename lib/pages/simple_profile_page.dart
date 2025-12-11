@@ -59,7 +59,7 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
                 'Cancel',
-                style: TextStyle(color: AppTheme.secondaryText),
+                style: const TextStyle(color: AppTheme.secondaryText),
               ),
             ),
             TextButton(
@@ -154,14 +154,14 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
 
               final userData = snapshot.data?.data() ?? {};
 
-              return Column(
-                children: [
-                  _buildHeader(),
-                  _buildProfileInfo(userData),
-                  _buildStats(userData),
-                  _buildActionButtons(),
-                  _buildTabBar(),
-                  Expanded(child: _buildContent()),
+              return CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(child: _buildHeader()),
+                  SliverToBoxAdapter(child: _buildProfileInfo(userData)),
+                  SliverToBoxAdapter(child: _buildStats(userData)),
+                  SliverToBoxAdapter(child: _buildActionButtons()),
+                  SliverToBoxAdapter(child: _buildTabBar()),
+                  _buildContent(),
                 ],
               );
             },
@@ -202,7 +202,7 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
                   decoration: BoxDecoration(
                     color: AppTheme.accentGray,
                     borderRadius: BorderRadius.circular(22),
-                    border: Border.all(color: Colors.white24),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                   ),
                   child: const Icon(
                     Icons.settings,
@@ -220,7 +220,7 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
                   decoration: BoxDecoration(
                     color: AppTheme.accentGray,
                     borderRadius: BorderRadius.circular(22),
-                    border: Border.all(color: Colors.white24),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                   ),
                   child: const Icon(
                     Icons.logout,
@@ -418,7 +418,7 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
             decoration: BoxDecoration(
               color: AppTheme.accentGray,
               borderRadius: BorderRadius.circular(25),
-              border: Border.all(color: Colors.white24),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
             ),
             child: const Icon(Icons.share, color: Colors.white, size: 20),
           ),
@@ -466,20 +466,22 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
   }
 
   Widget _buildContent() {
-    return Padding(
+    return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: GridView.builder(
-        itemCount: _userGraffiti.length,
+      sliver: SliverGrid(
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
           childAspectRatio: 0.8,
         ),
-        itemBuilder: (context, index) {
-          final graffiti = _userGraffiti[index];
-          return _buildGraffitiItem(graffiti);
-        },
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final graffiti = _userGraffiti[index];
+            return _buildGraffitiItem(graffiti);
+          },
+          childCount: _userGraffiti.length,
+        ),
       ),
     );
   }

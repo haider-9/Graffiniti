@@ -44,7 +44,7 @@ class CustomBottomNavigation extends StatelessWidget {
           BottomNavigationBarItem(
             icon: Icon(Icons.groups_outlined),
             activeIcon: Icon(Icons.groups),
-            label: 'Communities',
+            label: 'communities',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),

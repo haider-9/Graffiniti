@@ -121,10 +121,7 @@ class _CommunitiesPageState extends State<CommunitiesPage>
               Expanded(
                 child: TabBarView(
                   controller: _tabController,
-                  children: [
-                    _buildFeedTab(),
-                    _buildCommunitiesTab(),
-                  ],
+                  children: [_buildFeedTab(), _buildCommunitiesTab()],
                 ),
               ),
             ],
@@ -151,7 +148,7 @@ class _CommunitiesPageState extends State<CommunitiesPage>
           ),
           const SizedBox(width: 12),
           Text(
-            'Communities',
+            'communities',
             style: TextStyle(
               color: Colors.white,
               fontSize: 28,
@@ -203,7 +200,7 @@ class _CommunitiesPageState extends State<CommunitiesPage>
         labelStyle: const TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w600,
-          color: Colors.white
+          color: Colors.white,
         ),
         tabs: const [
           Tab(text: 'Feed'),
@@ -238,8 +235,11 @@ class _CommunitiesPageState extends State<CommunitiesPage>
   }
 
   Widget _buildFilterChips() {
-    final filters = ['All', ..._communities.where((c) => c.isJoined).map((c) => c.name)];
-    
+    final filters = [
+      'All',
+      ..._communities.where((c) => c.isJoined).map((c) => c.name),
+    ];
+
     return Container(
       height: 60,
       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -250,7 +250,7 @@ class _CommunitiesPageState extends State<CommunitiesPage>
         itemBuilder: (context, index) {
           final filter = filters[index];
           final isSelected = _selectedFilter == filter;
-          
+
           return GestureDetector(
             onTap: () => setState(() => _selectedFilter = filter),
             child: Container(
@@ -325,10 +325,7 @@ class _CommunitiesPageState extends State<CommunitiesPage>
           const SizedBox(height: 8),
           const Text(
             'Join communities to see their posts',
-            style: TextStyle(
-              color: AppTheme.secondaryText,
-              fontSize: 14,
-            ),
+            style: TextStyle(color: AppTheme.secondaryText, fontSize: 14),
           ),
         ],
       ),

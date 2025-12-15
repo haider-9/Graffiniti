@@ -1,0 +1,133 @@
+rules_version = '2';
+
+// Firestore Security Rules following mandatory architecture
+// Rules are authoritative - client validation is advisory only
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions for validation and authorization
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function hasValidTimestamp() {
+      return request.resource.data.updatedAt == request.time;
+    }
+    
+    function hasRequiredUserFields() {
+      return request.resource.data.keys().hasAll([
+        'email', 'displayName', 'createdAt', 'updatedAt'
+      ]);
+    }
+    
+    function hasRequiredGraffitiFields() {
+      return request.resource.data.keys().hasAll([
+        'authorId', 'authorSnapshot', 'imageUrl', 'createdAt', 'updatedAt'
+      ]);
+    }
+    
+    function hasRequiredCommunityFields() {
+      return request.resource.data.keys().hasAll([
+        'name', 'description', 'creatorId', 'creatorSnapshot', 'createdAt', 'updatedAt'
+      ]);
+    }
+    
+    function isValidMemberRole(role) {
+      return role in ['creator', 'admin', 'moderator', 'member'];
+    }
+
+    // Users collection rules
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(userId) 
+        && hasRequiredUserFields()
+        && hasValidTimestamp();
+      allow update: if isOwner(userId) 
+        && hasValidTimestamp()
+        && request.resource.data.id == resource.data.id; // Prevent ID changes
+      allow delete: if isOwner(userId);
+    }
+
+    // Graffiti collection rules
+    match /graffiti/{graffitiId} {
+      allow read: if isAuthenticated() 
+        && (resource.data.isPublic == true || isOwner(resource.data.authorId));
+      allow create: if isAuthenticated() 
+        && hasRequiredGraffitiFields()
+        && hasValidTimestamp()
+        && request.resource.data.authorId == request.auth.uid;
+      allow update: if isOwner(resource.data.authorId) 
+        && hasValidTimestamp();
+      allow delete: if isOwner(resource.data.authorId);
+
+      // Graffiti likes subcollection
+      match /likes/{userId} {
+        allow read: if isAuthenticated();
+        allow create, delete: if isOwner(userId);
+      }
+
+      // Graffiti comments subcollection
+      match /comments/{commentId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() 
+          && request.resource.data.userId == request.auth.uid
+          && hasValidTimestamp();
+        allow update, delete: if isOwner(resource.data.userId);
+      }
+    }
+
+    // Communities collection rules
+    match /communities/{communityId} {
+      allow read: if isAuthenticated() 
+        && (resource.data.isPublic == true || isCommunityMember(communityId));
+      allow create: if isAuthenticated() 
+        && hasRequiredCommunityFields()
+        && hasValidTimestamp()
+        && request.resource.data.creatorId == request.auth.uid;
+      allow update: if isAuthenticated() 
+        && hasValidTimestamp()
+        && (isOwner(resource.data.creatorId) || isCommunityAdmin(communityId));
+      allow delete: if isOwner(resource.data.creatorId);
+
+      // Community members subcollection
+      match /members/{userId} {
+        allow read: if isAuthenticated() && isCommunityMember(communityId);
+        allow create: if isAuthenticated() 
+          && request.resource.data.userId == request.auth.uid
+          && isValidMemberRole(request.resource.data.role)
+          && hasValidTimestamp();
+        allow update: if isAuthenticated() 
+          && hasValidTimestamp()
+          && (isOwner(userId) || isCommunityAdmin(communityId))
+          && isValidMemberRole(request.resource.data.role);
+        allow delete: if isAuthenticated() 
+          && (isOwner(userId) || isCommunityAdmin(communityId));
+      }
+
+      // Community graffiti subcollection (references to main graffiti)
+      match /graffiti/{graffitiId} {
+        allow read: if isAuthenticated() && isCommunityMember(communityId);
+        allow create: if isAuthenticated() 
+          && isCommunityMember(communityId)
+          && request.resource.data.authorId == request.auth.uid;
+        allow delete: if isAuthenticated() 
+          && (isOwner(resource.data.authorId) || isCommunityAdmin(communityId));
+      }
+    }
+
+    // Helper function to check community membership
+    function isCommunityMember(communityId) {
+      return exists(/databases/$(database)/documents/communities/$(communityId)/members/$(request.auth.uid));
+    }
+
+    // Helper function to check community admin privileges
+    function isCommunityAdmin(communityId) {
+      let member = get(/databases/$(database)/documents/communities/$(communityId)/members/$(request.auth.uid));
+      return member.data.role in ['creator', 'admin'];
+    }
+  }
+}

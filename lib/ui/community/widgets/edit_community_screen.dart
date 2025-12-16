@@ -33,35 +33,125 @@ class _EditCommunityScreenState extends State<EditCommunityScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        title: const Text('Edit Community'),
+        title: const Text('Community Settings'),
         centerTitle: true,
         elevation: 0,
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _isLoading
-            ? null
-            : () => _formKey.currentState?.submitForm(),
-        icon: _isLoading
-            ? const SizedBox(
-                height: 18,
-                width: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
+      body: Column(
+        children: [
+          Expanded(
+            child: CommunityForm(
+              key: _formKey,
+              initialData: initialData,
+              isEditing: true,
+              onSubmit: _handleFormSubmit,
+              isLoading: _isLoading,
+              submitButtonText: 'Save Changes',
+              loadingButtonText: 'Saving...',
+              submitButtonIcon: Icons.save,
+            ),
+          ),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            child: ElevatedButton.icon(
+              onPressed: _isLoading ? null : _showDeleteConfirmationDialog,
+              icon: const Icon(Icons.delete_outline),
+              label: const Text('Delete Community'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
                 ),
-              )
-            : const Icon(Icons.save),
-        label: Text(_isLoading ? 'Saving...' : 'Save'),
-        elevation: 4,
-      ),
-      body: CommunityForm(
-        key: _formKey,
-        initialData: initialData,
-        isEditing: true,
-        onSubmit: _handleFormSubmit,
-        isLoading: _isLoading,
+              ),
+            ),
+          ),
+        ],
       ),
     );
+  }
+
+  void _showDeleteConfirmationDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Community'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Are you sure you want to delete "${widget.community.name}"?',
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'This action cannot be undone. All posts, members, and data associated with this community will be permanently deleted.',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _handleDeleteCommunity();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _handleDeleteCommunity() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final viewModel = context.read<CommunityViewModel>();
+
+      await viewModel.deleteCommunity(widget.community.id);
+
+      if (mounted) {
+        Navigator.of(context).pop(true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Community deleted successfully'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error deleting community: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   Future<void> _handleFormSubmit(CommunityFormData data) async {

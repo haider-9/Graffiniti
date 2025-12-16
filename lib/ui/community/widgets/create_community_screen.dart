@@ -133,28 +133,14 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
         centerTitle: true,
         elevation: 0,
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _isLoading
-            ? null
-            : () => _formKey.currentState?.submitForm(),
-        icon: _isLoading
-            ? const SizedBox(
-                height: 18,
-                width: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
-            : const Icon(Icons.rocket_launch),
-        label: Text(_isLoading ? 'Creating...' : 'Create'),
-        elevation: 4,
-      ),
       body: CommunityForm(
         key: _formKey,
         isEditing: false,
         onSubmit: _handleFormSubmit,
         isLoading: _isLoading,
+        submitButtonText: 'Create Community',
+        loadingButtonText: 'Creating...',
+        submitButtonIcon: Icons.rocket_launch,
       ),
     );
   }

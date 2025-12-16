@@ -123,6 +123,21 @@ class CommunityViewModel extends ChangeNotifier {
     }
   }
 
+  Future<void> deleteCommunity(String communityId) async {
+    _loading = true;
+    notifyListeners();
+
+    try {
+      await _repository.deleteCommunity(communityId);
+      _error = null;
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _loading = false;
+      notifyListeners();
+    }
+  }
+
   void clearError() {
     _error = null;
     notifyListeners();

@@ -335,6 +335,11 @@ class CommunityForm extends StatefulWidget {
   final bool isEditing;
   final void Function(CommunityFormData) onSubmit;
   final bool isLoading;
+  final String? submitButtonText;
+  final String? loadingButtonText;
+  final IconData? submitButtonIcon;
+  final Color? submitButtonColor;
+  final bool showSubmitButton;
 
   const CommunityForm({
     super.key,
@@ -342,6 +347,11 @@ class CommunityForm extends StatefulWidget {
     this.isEditing = false,
     required this.onSubmit,
     this.isLoading = false,
+    this.submitButtonText,
+    this.loadingButtonText,
+    this.submitButtonIcon,
+    this.submitButtonColor,
+    this.showSubmitButton = true,
   });
 
   @override
@@ -751,7 +761,51 @@ class CommunityFormState extends State<CommunityForm> {
               ],
             ),
           ),
-          const SizedBox(height: 100),
+          if (widget.showSubmitButton) ...[
+            const SizedBox(height: 24),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: ElevatedButton.icon(
+                onPressed: widget.isLoading ? null : submitForm,
+                icon: widget.isLoading
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Icon(
+                        widget.submitButtonIcon ??
+                            (widget.isEditing
+                                ? Icons.save
+                                : Icons.rocket_launch),
+                      ),
+                label: Text(
+                  widget.isLoading
+                      ? (widget.loadingButtonText ??
+                            (widget.isEditing ? 'Saving...' : 'Creating...'))
+                      : (widget.submitButtonText ??
+                            (widget.isEditing
+                                ? 'Save Changes'
+                                : 'Create Community')),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor:
+                      widget.submitButtonColor ?? theme.primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 4,
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 32),
         ],
       ),
     );

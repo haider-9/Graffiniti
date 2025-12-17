@@ -10,6 +10,7 @@ import 'pages/camera_page.dart';
 import 'pages/discover_page.dart';
 import 'pages/simple_profile_page.dart';
 import 'core/widgets/custom_bottom_navigation.dart';
+import 'core/widgets/auth_wrapper.dart';
 import 'ui/community/widgets/communities_screen.dart';
 import 'config/dependencies.dart';
 
@@ -18,9 +19,7 @@ List<CameraDescription> cameras = [];
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -47,7 +46,7 @@ class MyApp extends StatelessWidget {
         title: 'Graffiniti',
         theme: AppTheme.darkTheme,
         debugShowCheckedModeBanner: false,
-        home: const MainNavigation(),
+        home: const AuthWrapper(),
       ),
     );
   }

@@ -40,9 +40,9 @@ class _LoginPageState extends State<LoginPage> {
         password: _passwordController.text,
       );
 
-      // Navigation handled automatically by AuthWrapper
       if (mounted) {
         ToastHelper.success(context, 'Welcome back!');
+        // Navigation handled automatically by AuthWrapper
       }
     } catch (e) {
       if (mounted) {

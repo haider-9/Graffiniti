@@ -186,11 +186,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 borderRadius: BorderRadius.circular(22),
                 border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
               ),
-              child: Icon(
-                Icons.arrow_back,
-                color: Colors.white,
-                size: 20,
-              ),
+              child: Icon(Icons.arrow_back, color: Colors.white, size: 20),
             ),
           ),
           const SizedBox(width: 16),
@@ -268,10 +264,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: TextStyle(
-                    color: AppTheme.secondaryText,
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: AppTheme.secondaryText, fontSize: 12),
                 ),
               ],
             ),
@@ -550,7 +543,7 @@ class _SettingsPageState extends State<SettingsPage> {
     try {
       await _authService.signOut();
       if (mounted) {
-        Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+        // The AuthWrapper will automatically handle navigation to login
       }
     } catch (e) {
       if (mounted) {

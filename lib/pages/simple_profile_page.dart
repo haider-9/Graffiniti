@@ -34,7 +34,7 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
       await _authService.signOut();
       if (mounted) {
         ToastHelper.success(context, 'Logged out successfully');
-        Navigator.of(context).pushReplacementNamed('/');
+        // The AuthWrapper will automatically handle navigation to login
       }
     } catch (e) {
       if (mounted) {
@@ -152,6 +152,32 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
                 );
               }
 
+              // Handle case where user document doesn't exist
+              if (!snapshot.hasData || !snapshot.data!.exists) {
+                // Create user document if it doesn't exist
+                WidgetsBinding.instance.addPostFrameCallback((_) async {
+                  try {
+                    await _userService.createUserDocument(
+                      _currentUser!.uid,
+                      _currentUser!.email ?? '',
+                      _currentUser!.displayName ?? 'User',
+                    );
+                  } catch (e) {
+                    if (mounted && context.mounted) {
+                      ToastHelper.genericError(context, e);
+                    }
+                  }
+                });
+
+                return const Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppTheme.accentOrange,
+                    ),
+                  ),
+                );
+              }
+
               final userData = snapshot.data?.data() ?? {};
 
               return CustomScrollView(
@@ -202,7 +228,9 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
                   decoration: BoxDecoration(
                     color: AppTheme.accentGray,
                     borderRadius: BorderRadius.circular(22),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.1),
+                    ),
                   ),
                   child: const Icon(
                     Icons.settings,
@@ -220,7 +248,9 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
                   decoration: BoxDecoration(
                     color: AppTheme.accentGray,
                     borderRadius: BorderRadius.circular(22),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.1),
+                    ),
                   ),
                   child: const Icon(
                     Icons.logout,
@@ -475,13 +505,10 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
           mainAxisSpacing: 12,
           childAspectRatio: 0.8,
         ),
-        delegate: SliverChildBuilderDelegate(
-          (context, index) {
-            final graffiti = _userGraffiti[index];
-            return _buildGraffitiItem(graffiti);
-          },
-          childCount: _userGraffiti.length,
-        ),
+        delegate: SliverChildBuilderDelegate((context, index) {
+          final graffiti = _userGraffiti[index];
+          return _buildGraffitiItem(graffiti);
+        }, childCount: _userGraffiti.length),
       ),
     );
   }

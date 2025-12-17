@@ -24,15 +24,15 @@ class UserService {
           .collection('users')
           .doc(userId)
           .get(const GetOptions(source: Source.cache));
-      
+
       if (cachedDoc.exists) {
         // Return cached data immediately, then fetch fresh data in background
         _firestore
             .collection('users')
             .doc(userId)
             .get(const GetOptions(source: Source.server))
-            .catchError((_) {}); // Ignore errors for background fetch
-        
+            .catchError((_) => cachedDoc); // Return cached doc on error
+
         return cachedDoc.data() as Map<String, dynamic>?;
       }
     } catch (_) {
@@ -74,10 +74,10 @@ class UserService {
       }
 
       // Use set with merge to create document if it doesn't exist
-      await _firestore.collection('users').doc(userId).set(
-        updateData,
-        SetOptions(merge: true),
-      );
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .set(updateData, SetOptions(merge: true));
 
       // Update Firebase Auth display name if provided
       if (displayName != null && _auth.currentUser != null) {

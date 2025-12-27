@@ -11,6 +11,7 @@ import '../core/widgets/glassmorphic_container.dart';
 import '../core/utils/permission_helper.dart';
 import '../core/services/media_service.dart';
 import 'ar_graffiti_page.dart';
+import 'ar_demo_launcher.dart';
 
 class AspectRatioOption {
   final String label;
@@ -682,6 +683,41 @@ class _CameraPageState extends State<CameraPage>
       top: MediaQuery.of(context).size.height * 0.4,
       child: Column(
         children: [
+          // AR Demo Launcher
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ARDemoLauncher()),
+              );
+            },
+            child: Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.purple, Colors.blue],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(25),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.purple.withValues(alpha: 0.4),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.view_in_ar_outlined,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+
           // Direct AR Graffiti button
           GestureDetector(
             onTap: () {

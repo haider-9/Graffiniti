@@ -38,6 +38,10 @@ dependencies:
   path: ^1.8.3
   
   # AR and graphics
+  arcore_flutter_plugin:
+    git:
+      url: https://github.com/giandifra/arcore_flutter_plugin.git
+      ref: master
   flutter_svg: ^2.0.9
   vector_math: ^2.1.4
   
@@ -46,8 +50,8 @@ dependencies:
   shimmer: ^3.0.0
   
   # Utilities
-  permission_handler: ^11.3.1
-  geolocator: ^10.1.0
+  permission_handler: ^12.0.1
+  geolocator: ^9.0.2
   share_plus: ^7.2.1
   
   # Firebase
@@ -90,6 +94,7 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/animations/
+    - assets/models/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

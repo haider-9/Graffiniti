@@ -1,18 +1,27 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
-import 'package:crypto/crypto.dart';
-import 'dart:convert';
 import '../config/cloudinary_config.dart';
 
 class CloudinaryService {
-  final Dio _dio = Dio();
+  final Dio _dio = Dio(
+    BaseOptions(
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 60),
+      sendTimeout: const Duration(seconds: 60),
+    ),
+  );
 
   /// Upload profile image to Cloudinary
   Future<String> uploadProfileImage(String userId, File imageFile) async {
     try {
-      final fileName = 'profile_${userId}_${DateTime.now().millisecondsSinceEpoch}';
-      return await _uploadImage(imageFile, fileName, CloudinaryConfig.profileImagesFolder);
+      final fileName =
+          'profile_${userId}_${DateTime.now().millisecondsSinceEpoch}';
+      return await _uploadImage(
+        imageFile,
+        fileName,
+        CloudinaryConfig.profileImagesFolder,
+      );
     } catch (e) {
       throw Exception('Failed to upload profile image: ${e.toString()}');
     }
@@ -21,8 +30,13 @@ class CloudinaryService {
   /// Upload banner image to Cloudinary
   Future<String> uploadBannerImage(String userId, File imageFile) async {
     try {
-      final fileName = 'banner_${userId}_${DateTime.now().millisecondsSinceEpoch}';
-      return await _uploadImage(imageFile, fileName, CloudinaryConfig.bannerImagesFolder);
+      final fileName =
+          'banner_${userId}_${DateTime.now().millisecondsSinceEpoch}';
+      return await _uploadImage(
+        imageFile,
+        fileName,
+        CloudinaryConfig.bannerImagesFolder,
+      );
     } catch (e) {
       throw Exception('Failed to upload banner image: ${e.toString()}');
     }
@@ -31,62 +45,118 @@ class CloudinaryService {
   /// Upload graffiti image to Cloudinary
   Future<String> uploadGraffitiImage(String userId, File imageFile) async {
     try {
-      final fileName = 'graffiti_${userId}_${DateTime.now().millisecondsSinceEpoch}';
-      return await _uploadImage(imageFile, fileName, CloudinaryConfig.graffitiImagesFolder);
+      final fileName =
+          'graffiti_${userId}_${DateTime.now().millisecondsSinceEpoch}';
+      return await _uploadImage(
+        imageFile,
+        fileName,
+        CloudinaryConfig.graffitiImagesFolder,
+      );
     } catch (e) {
       throw Exception('Failed to upload graffiti image: ${e.toString()}');
     }
   }
 
   /// Generic method to upload image to Cloudinary
-  Future<String> _uploadImage(File imageFile, String fileName, String folder) async {
+  Future<String> _uploadImage(
+    File imageFile,
+    String fileName,
+    String folder,
+  ) async {
     try {
-      // Read image file as bytes
-      final Uint8List imageBytes = await imageFile.readAsBytes();
+      // Validate file exists and is readable
+      if (!await imageFile.exists()) {
+        throw Exception('Image file does not exist');
+      }
 
-      // Create form data
+      // Get file extension from original file
+      final originalPath = imageFile.path;
+      final extension = originalPath.split('.').last.toLowerCase();
+      final supportedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+
+      if (!supportedExtensions.contains(extension)) {
+        throw Exception('Unsupported image format: $extension');
+      }
+
+      // Use original extension instead of forcing jpg
+      final fileNameWithExt = '$fileName.$extension';
+
+      // Create multipart file from file path (more reliable than bytes)
+      final multipartFile = await MultipartFile.fromFile(
+        imageFile.path,
+        filename: fileNameWithExt,
+      );
+
+      // Create form data with proper structure
       final formData = FormData.fromMap({
-        'file': MultipartFile.fromBytes(
-          imageBytes,
-          filename: '$fileName.jpg',
-        ),
+        'file': multipartFile,
         'upload_preset': CloudinaryConfig.uploadPreset,
         'folder': folder,
         'public_id': fileName,
         'resource_type': 'image',
-        'format': 'jpg',
       });
 
-      // Upload to Cloudinary
+      // Upload to Cloudinary with proper timeout settings
       final response = await _dio.post(
         CloudinaryConfig.uploadUrl,
         data: formData,
         options: Options(
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
           receiveTimeout: const Duration(seconds: 60),
           sendTimeout: const Duration(seconds: 60),
-          connectTimeout: const Duration(seconds: 30),
+          followRedirects: true,
+          validateStatus: (status) => status != null && status < 500,
         ),
       );
 
+      // Handle response
       if (response.statusCode == 200) {
         final responseData = response.data;
-        return responseData['secure_url'] as String;
+        if (responseData != null && responseData['secure_url'] != null) {
+          return responseData['secure_url'] as String;
+        } else {
+          throw Exception(
+            'Invalid response from Cloudinary: missing secure_url',
+          );
+        }
       } else {
-        throw Exception('Upload failed with status: ${response.statusCode}');
+        // Handle specific error responses
+        String errorMessage =
+            'Upload failed with status: ${response.statusCode}';
+        if (response.data != null && response.data['error'] != null) {
+          final error = response.data['error'];
+          if (error['message'] != null) {
+            errorMessage = 'Cloudinary error: ${error['message']}';
+          }
+        }
+        throw Exception(errorMessage);
       }
     } catch (e) {
       if (e is DioException) {
-        if (e.type == DioExceptionType.connectionTimeout ||
-            e.type == DioExceptionType.receiveTimeout ||
-            e.type == DioExceptionType.sendTimeout) {
-          throw Exception('Upload timeout. Please check your internet connection.');
-        } else if (e.type == DioExceptionType.connectionError) {
-          throw Exception('Connection error. Please check your internet connection.');
-        } else {
-          throw Exception('Upload failed: ${e.message}');
+        switch (e.type) {
+          case DioExceptionType.connectionTimeout:
+          case DioExceptionType.sendTimeout:
+          case DioExceptionType.receiveTimeout:
+            throw Exception(
+              'Upload timeout. Please check your internet connection and try again.',
+            );
+          case DioExceptionType.connectionError:
+            throw Exception(
+              'Connection error. Please check your internet connection.',
+            );
+          case DioExceptionType.badResponse:
+            final statusCode = e.response?.statusCode;
+            final responseData = e.response?.data;
+            String errorMsg = 'Server error (${statusCode ?? 'unknown'})';
+
+            if (responseData != null && responseData['error'] != null) {
+              final error = responseData['error'];
+              if (error['message'] != null) {
+                errorMsg = 'Cloudinary error: ${error['message']}';
+              }
+            }
+            throw Exception(errorMsg);
+          default:
+            throw Exception('Upload failed: ${e.message ?? e.toString()}');
         }
       }
       throw Exception('Upload failed: ${e.toString()}');
@@ -96,19 +166,73 @@ class CloudinaryService {
   /// Delete image from Cloudinary using public_id
   Future<bool> deleteImage(String publicId) async {
     try {
-      // For unsigned uploads, we can't delete images directly
-      // This would require a signed request with API key and secret
-      // For now, we'll just return true as images will be overwritten
-      // when new ones are uploaded with the same public_id
-      return true;
+      // For unsigned uploads, direct deletion via API requires signed requests
+      // Since we're using unsigned uploads, we'll implement a workaround
+
+      // Method 1: Try to use the destroy endpoint (might work in some cases)
+      try {
+        final response = await _dio.post(
+          'https://api.cloudinary.com/v1_1/${CloudinaryConfig.cloudName}/image/destroy',
+          data: FormData.fromMap({
+            'public_id': publicId,
+            'api_key': CloudinaryConfig.apiKey,
+            'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
+          }),
+          options: Options(
+            validateStatus: (status) => status != null && status < 500,
+          ),
+        );
+
+        if (response.statusCode == 200) {
+          final result = response.data;
+          if (result['result'] == 'ok') {
+            return true;
+          }
+        }
+      } catch (e) {
+        // Destroy endpoint failed, continue with workaround
+      }
+
+      // Method 2: Upload a minimal placeholder image to "replace" the old one
+      // This effectively removes the old image content while keeping the same public_id
+      final placeholderData = FormData.fromMap({
+        'file':
+            'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', // 1x1 transparent GIF
+        'public_id': publicId,
+        'upload_preset': CloudinaryConfig.uploadPreset,
+        'resource_type': 'image',
+        'overwrite': true,
+        'invalidate': true, // Invalidate CDN cache
+      });
+
+      final response = await _dio.post(
+        CloudinaryConfig.uploadUrl,
+        data: placeholderData,
+        options: Options(
+          validateStatus: (status) => status != null && status < 500,
+        ),
+      );
+
+      return response.statusCode == 200;
     } catch (e) {
       print('Warning: Could not delete image from Cloudinary: $e');
+      // Don't throw error as this is not critical for app functionality
       return false;
     }
   }
 
+  /// Delete image by URL (extracts public_id and deletes)
+  Future<bool> deleteImageByUrl(String imageUrl) async {
+    final publicId = extractPublicId(imageUrl);
+    if (publicId != null) {
+      return await deleteImage(publicId);
+    }
+    return false;
+  }
+
   /// Get optimized URL for different image sizes
-  String getOptimizedImageUrl(String originalUrl, {
+  String getOptimizedImageUrl(
+    String originalUrl, {
     int? width,
     int? height,
     String quality = 'auto',
@@ -187,20 +311,23 @@ class CloudinaryService {
     String type, // 'profile', 'banner', or 'graffiti'
   ) async {
     try {
-      final fileName = '${type}_${userId}_${DateTime.now().millisecondsSinceEpoch}';
+      final fileName =
+          '${type}_${userId}_${DateTime.now().millisecondsSinceEpoch}';
       final folder = '${type}_images';
+
+      // Create multipart file from bytes with proper filename
+      final multipartFile = MultipartFile.fromBytes(
+        imageBytes,
+        filename: '$fileName.jpg',
+      );
 
       // Create form data
       final formData = FormData.fromMap({
-        'file': MultipartFile.fromBytes(
-          imageBytes,
-          filename: '$fileName.jpg',
-        ),
+        'file': multipartFile,
         'upload_preset': CloudinaryConfig.uploadPreset,
         'folder': folder,
         'public_id': fileName,
         'resource_type': 'image',
-        'format': 'jpg',
       });
 
       // Upload to Cloudinary
@@ -208,31 +335,60 @@ class CloudinaryService {
         CloudinaryConfig.uploadUrl,
         data: formData,
         options: Options(
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
           receiveTimeout: const Duration(seconds: 60),
           sendTimeout: const Duration(seconds: 60),
-          connectTimeout: const Duration(seconds: 30),
+          followRedirects: true,
+          validateStatus: (status) => status != null && status < 500,
         ),
       );
 
       if (response.statusCode == 200) {
         final responseData = response.data;
-        return responseData['secure_url'] as String;
+        if (responseData != null && responseData['secure_url'] != null) {
+          return responseData['secure_url'] as String;
+        } else {
+          throw Exception(
+            'Invalid response from Cloudinary: missing secure_url',
+          );
+        }
       } else {
-        throw Exception('Upload failed with status: ${response.statusCode}');
+        String errorMessage =
+            'Upload failed with status: ${response.statusCode}';
+        if (response.data != null && response.data['error'] != null) {
+          final error = response.data['error'];
+          if (error['message'] != null) {
+            errorMessage = 'Cloudinary error: ${error['message']}';
+          }
+        }
+        throw Exception(errorMessage);
       }
     } catch (e) {
       if (e is DioException) {
-        if (e.type == DioExceptionType.connectionTimeout ||
-            e.type == DioExceptionType.receiveTimeout ||
-            e.type == DioExceptionType.sendTimeout) {
-          throw Exception('Upload timeout. Please check your internet connection.');
-        } else if (e.type == DioExceptionType.connectionError) {
-          throw Exception('Connection error. Please check your internet connection.');
-        } else {
-          throw Exception('Upload failed: ${e.message}');
+        switch (e.type) {
+          case DioExceptionType.connectionTimeout:
+          case DioExceptionType.sendTimeout:
+          case DioExceptionType.receiveTimeout:
+            throw Exception(
+              'Upload timeout. Please check your internet connection and try again.',
+            );
+          case DioExceptionType.connectionError:
+            throw Exception(
+              'Connection error. Please check your internet connection.',
+            );
+          case DioExceptionType.badResponse:
+            final statusCode = e.response?.statusCode;
+            final responseData = e.response?.data;
+            String errorMsg = 'Server error (${statusCode ?? 'unknown'})';
+
+            if (responseData != null && responseData['error'] != null) {
+              final error = responseData['error'];
+              if (error['message'] != null) {
+                errorMsg = 'Cloudinary error: ${error['message']}';
+              }
+            }
+            throw Exception(errorMsg);
+          default:
+            throw Exception('Upload failed: ${e.message ?? e.toString()}');
         }
       }
       throw Exception('Upload failed: ${e.toString()}');

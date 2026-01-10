@@ -209,7 +209,7 @@ class CommunityPostCard extends StatelessWidget {
             color: Colors.white,
             onTap: () async {
               await ShareService.shareGraffiti(
-                title: post.title.isNotEmpty ? post.title : 'Community Post',
+                title: post.caption.isNotEmpty ? post.caption : 'Community Post',
                 artistName: post.username,
                 location: null,
                 graffitiId: post.id,

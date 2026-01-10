@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../core/theme/app_theme.dart';
-import '../core/widgets/glassmorphic_container.dart';
 import '../core/widgets/account_upgrade_dialog.dart';
 import '../core/widgets/logout_dialog.dart';
-import '../core/utils/toast_helper.dart';
 import '../core/services/auth_service.dart';
 import '../core/services/user_service.dart';
 import '../core/services/share_service.dart';
@@ -68,25 +66,17 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.qr_code, color: Colors.white),
+              leading: const Icon(Icons.settings, color: Colors.white),
               title: const Text(
-                'QR Code',
+                'Settings',
                 style: TextStyle(color: Colors.white),
               ),
               onTap: () {
                 Navigator.pop(context);
-                // Show QR code
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.link, color: Colors.white),
-              title: const Text(
-                'Copy Profile Link',
-                style: TextStyle(color: Colors.white),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                // Copy profile link
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SettingsPage()),
+                );
               },
             ),
             ListTile(
@@ -141,7 +131,9 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
     final profileImageUrl = _userData['profileImageUrl'] ?? user?.photoURL;
     final bannerImageUrl = _userData['bannerImageUrl'];
     final bio = _userData['bio'] ?? 'Click here to fill in the profile';
-    final userId = user?.uid?.substring(0, 10) ?? '0000000000';
+    final userId = user?.uid != null
+        ? user!.uid.substring(0, 10)
+        : '0000000000';
 
     return SliverAppBar(
       expandedHeight: 280,
@@ -149,46 +141,32 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
       pinned: true,
       backgroundColor: AppTheme.primaryBlack,
       elevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.menu, color: Colors.white),
-        onPressed: () {},
-      ),
       actions: [
-        GlassmorphicContainer(
-          width: 100,
-          height: 32,
-          borderRadius: BorderRadius.circular(16),
-          backgroundColor: Colors.white.withValues(alpha: 0.1),
-          child: GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const EditProfilePage(),
-                ),
-              );
-            },
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.edit_outlined,
-                  color: Colors.white.withValues(alpha: 0.8),
-                  size: 14,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'Edit',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.8),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const EditProfilePage()),
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+            ),
+            child: const Text(
+              'Edit Profile',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ),
+
         const SizedBox(width: 8),
         GestureDetector(
           onTap: () async {
@@ -258,6 +236,21 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
                     )
                   : null,
             ),
+            // Dark gradient overlay for better readability
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.6),
+                    Colors.black.withValues(alpha: 0.3),
+                    Colors.transparent,
+                  ],
+                  stops: const [0.0, 0.4, 1.0],
+                ),
+              ),
+            ),
             // Profile content
             Positioned(
               bottom: 20,
@@ -326,14 +319,10 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
                                 decoration: BoxDecoration(
                                   color: AppTheme.accentOrange,
                                   shape: BoxShape.circle,
-<<<<<<< HEAD
                                   border: Border.all(
                                     color: Colors.white,
-                                    width: 2,
+                                    width: 1.5,
                                   ),
-=======
-                                  border: Border.all(color: Colors.white, width: 1.5),
->>>>>>> 9b71c29529e766ca6f72b888d8a22745b4162683
                                 ),
                                 child: const Icon(
                                   Icons.edit,
@@ -357,6 +346,13 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
                                 color: Colors.white,
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
+                                shadows: [
+                                  Shadow(
+                                    offset: Offset(0, 1),
+                                    blurRadius: 3,
+                                    color: Colors.black54,
+                                  ),
+                                ],
                               ),
                             ),
                             if (_authService.isAnonymous) ...[
@@ -390,8 +386,15 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
                             Text(
                               'Artist ID: $userId 🎨',
                               style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.8),
+                                color: Colors.white.withValues(alpha: 0.9),
                                 fontSize: 14,
+                                shadows: const [
+                                  Shadow(
+                                    offset: Offset(0, 1),
+                                    blurRadius: 2,
+                                    color: Colors.black54,
+                                  ),
+                                ],
                               ),
                             ),
                           ],
@@ -403,8 +406,15 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
                   Text(
                     bio,
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.9),
+                      color: Colors.white.withValues(alpha: 0.95),
                       fontSize: 16,
+                      shadows: const [
+                        Shadow(
+                          offset: Offset(0, 1),
+                          blurRadius: 2,
+                          color: Colors.black54,
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -433,169 +443,46 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
                   _buildStatColumn('0', 'Followers'),
                   const SizedBox(width: 40),
                   _buildStatColumn('0', 'Likes&Views'),
-                  const Spacer(),
-                  // Action buttons
-                  if (_authService.isAnonymous) ...[
-                    GestureDetector(
-                      onTap: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => const AccountUpgradeDialog(),
-                        );
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          gradient: AppTheme.primaryGradient,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.upgrade,
-                              color: Colors.white,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 6),
-                            const Text(
-                              'Upgrade Account',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            // Action buttons
+            if (_authService.isAnonymous)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: GestureDetector(
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => const AccountUpgradeDialog(),
+                    );
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      gradient: AppTheme.primaryGradient,
+                      borderRadius: BorderRadius.circular(25),
                     ),
-                    const SizedBox(width: 12),
-                  ] else ...[
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const EditProfilePage(),
-                          ),
-                        );
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.2),
-                          ),
-                        ),
-                        child: const Text(
-                          'Edit Profile',
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.upgrade, color: Colors.white, size: 18),
+                        SizedBox(width: 8),
+                        Text(
+                          'Upgrade Account',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                  ],
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.2),
-                      ),
-                    ),
-                    child: IconButton(
-                      icon: const Icon(
-                        Icons.settings,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const SettingsPage(),
-                          ),
-                        );
-                      },
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
-            const SizedBox(height: 30),
-            // Quick action cards
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        // Navigate to AR Studio
-                        ToastHelper.info(context, 'Opening AR Studio...');
-                      },
-                      child: _buildActionCard(
-                        'AR Studio',
-                        'Create AR graffiti',
-                        Icons.view_in_ar,
-                        AppTheme.accentOrange,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        // Navigate to Gallery
-                        ToastHelper.info(context, 'Opening Gallery...');
-                      },
-                      child: _buildActionCard(
-                        'Gallery',
-                        'View my artwork',
-                        Icons.photo_library_outlined,
-                        AppTheme.accentBlue,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        // Navigate to Community
-                        ToastHelper.info(context, 'Opening Community...');
-                      },
-                      child: GestureDetector(
-                        onTap: () {
-                          // Navigate to communities page
-                          DefaultTabController.of(context)?.animateTo(2);
-                        },
-                        child: _buildActionCard(
-                          'Community',
-                          'Connect & share',
-                          Icons.groups_outlined,
-                          AppTheme.accentGreen,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
             const SizedBox(height: 30),
             // Content tabs
             _buildContentTabs(),
@@ -625,60 +512,6 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildActionCard(
-    String title,
-    String subtitle,
-    IconData icon,
-    Color accentColor,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.secondaryBlack,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: accentColor, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              if (accentColor != Colors.transparent) ...[
-                const SizedBox(width: 4),
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: accentColor,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ],
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            subtitle,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.7),
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -739,13 +572,8 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
                     _tabIndex == 0
                         ? Icons.view_in_ar_outlined
                         : _tabIndex == 1
-<<<<<<< HEAD
                         ? Icons.bookmark_outline
                         : Icons.favorite_outline,
-=======
-                            ? Icons.bookmark_outline
-                            : Icons.favorite_outline,
->>>>>>> 9b71c29529e766ca6f72b888d8a22745b4162683
                     color: Colors.white.withValues(alpha: 0.4),
                     size: 48,
                   ),

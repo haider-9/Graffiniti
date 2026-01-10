@@ -92,23 +92,24 @@ class _CameraPageState extends State<CameraPage>
       vsync: this,
     );
     _requestPermissions();
-    // Don't initialize camera automatically - wait for page to become visible
+    // Initialize camera immediately on app load for faster access
+    _initializeCamera();
   }
 
   // Method to be called when page becomes visible
   void onPageVisible() {
-    if (!_isPageVisible) {
-      _isPageVisible = true;
+    _isPageVisible = true;
+    // Only initialize if not already initialized
+    if (_controller == null || !_controller!.value.isInitialized) {
       _initializeCamera();
     }
   }
 
   // Method to be called when page becomes invisible
   void onPageInvisible() {
-    if (_isPageVisible) {
-      _isPageVisible = false;
-      _disposeCamera();
-    }
+    _isPageVisible = false;
+    // Keep camera running for faster access when returning to camera page
+    // Only dispose on app lifecycle changes or when explicitly needed
   }
 
   Future<void> _disposeCamera() async {
@@ -146,40 +147,36 @@ class _CameraPageState extends State<CameraPage>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final CameraController? cameraController = _controller;
 
-    // Only handle lifecycle changes if the camera page is currently visible
-    if (cameraController == null ||
-        !cameraController.value.isInitialized ||
-        !_isPageVisible) {
+    // Only handle lifecycle changes if camera is initialized
+    if (cameraController == null || !cameraController.value.isInitialized) {
       return;
     }
 
     switch (state) {
       case AppLifecycleState.paused:
-        // App is paused (e.g., notification panel opened, app switcher)
-        // Keep camera running since we're still on the camera page
+        // App is paused - dispose camera to free resources
+        _disposeCamera();
         break;
       case AppLifecycleState.inactive:
-        // App is inactive but still visible (e.g., incoming call overlay)
-        // Keep camera running since we're still on the camera page
+        // App is inactive but still visible - keep camera running
         break;
       case AppLifecycleState.detached:
         // App is detached, dispose camera
         _disposeCamera();
         break;
       case AppLifecycleState.resumed:
-        // App is resumed, reinitialize camera if needed and page is visible
-        if (_isPageVisible && !cameraController.value.isInitialized) {
-          _initializeCamera();
-        }
+        // App is resumed, reinitialize camera
+        _initializeCamera();
         break;
       case AppLifecycleState.hidden:
-        // App is hidden, keep camera running if page is visible
+        // App is hidden, dispose camera to free resources
+        _disposeCamera();
         break;
     }
   }
 
   Future<void> _initializeCamera() async {
-    if (cameras.isEmpty || !_isPageVisible) return;
+    if (cameras.isEmpty) return;
 
     // Dispose existing controller if it exists
     await _controller?.dispose();
@@ -194,7 +191,7 @@ class _CameraPageState extends State<CameraPage>
 
     try {
       _initializeControllerFuture = _controller!.initialize().then((_) async {
-        if (!mounted || !_isPageVisible) return;
+        if (!mounted) return;
 
         try {
           // Set initial flash mode after initialization
@@ -211,8 +208,8 @@ class _CameraPageState extends State<CameraPage>
       }
     } catch (e) {
       debugPrint('Error initializing camera: $e');
-      // Show error to user
-      if (mounted) {
+      // Show error to user only if page is visible
+      if (mounted && _isPageVisible) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(

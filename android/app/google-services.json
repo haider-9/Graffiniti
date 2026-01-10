@@ -12,7 +12,12 @@
           "package_name": "com.example.g"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "510755978540-gvon7gls4or05kjuc1dal69f5lc5eutc.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDA2urH2CVQ9eUMhlXMdL209ICGhSI1qgs"
@@ -20,7 +25,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "510755978540-gvon7gls4or05kjuc1dal69f5lc5eutc.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "510755978540-sec9oh3k1punk2h24sp3fin5e58ing15.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.grifiniti.RunnerTests"
+              }
+            }
+          ]
         }
       }
     },
@@ -31,7 +48,12 @@
           "package_name": "com.example.griffiniti"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "510755978540-gvon7gls4or05kjuc1dal69f5lc5eutc.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDA2urH2CVQ9eUMhlXMdL209ICGhSI1qgs"
@@ -39,7 +61,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "510755978540-gvon7gls4or05kjuc1dal69f5lc5eutc.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "510755978540-sec9oh3k1punk2h24sp3fin5e58ing15.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.grifiniti.RunnerTests"
+              }
+            }
+          ]
         }
       }
     },
@@ -50,7 +84,12 @@
           "package_name": "com.example.grifiniti"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "510755978540-gvon7gls4or05kjuc1dal69f5lc5eutc.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDA2urH2CVQ9eUMhlXMdL209ICGhSI1qgs"
@@ -58,7 +97,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "510755978540-gvon7gls4or05kjuc1dal69f5lc5eutc.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "510755978540-sec9oh3k1punk2h24sp3fin5e58ing15.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.grifiniti.RunnerTests"
+              }
+            }
+          ]
         }
       }
     }

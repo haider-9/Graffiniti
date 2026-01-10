@@ -2,7 +2,7 @@ import '../models/community.dart';
 import '../models/community_post.dart';
 
 /// Dummy data for communities and posts
-/// Used by the legacy CommunitiesPage for demonstration purposes
+/// Used for demonstration purposes
 class DummyCommunities {
   /// Get a list of dummy communities
   static List<Community> getCommunities() {

@@ -1,14 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:dio/dio.dart';
 import 'dart:io';
-import 'dart:typed_data';
 import 'cloudinary_service.dart';
 
 class UserService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final Dio _dio = Dio();
   final CloudinaryService _cloudinaryService = CloudinaryService();
 
   // Get current user ID
@@ -229,11 +226,32 @@ class UserService {
     try {
       String? imageUrl;
 
+      // Get current profile image URL to delete old image
+      String? oldImageUrl;
+      try {
+        final userData = await getUserData(userId);
+        oldImageUrl = userData?['profileImageUrl'];
+      } catch (e) {
+        // Ignore error, continue with update
+      }
+
       if (imageFile != null) {
         // Upload new image to Cloudinary
         imageUrl = await uploadProfileImage(userId, imageFile);
+
+        // Delete old image from Cloudinary if it exists
+        if (oldImageUrl != null &&
+            oldImageUrl.isNotEmpty &&
+            _cloudinaryService.isCloudinaryUrl(oldImageUrl)) {
+          await _cloudinaryService.deleteImageByUrl(oldImageUrl);
+        }
       } else {
-        // Remove image
+        // Remove image - delete from Cloudinary if it exists
+        if (oldImageUrl != null &&
+            oldImageUrl.isNotEmpty &&
+            _cloudinaryService.isCloudinaryUrl(oldImageUrl)) {
+          await _cloudinaryService.deleteImageByUrl(oldImageUrl);
+        }
         imageUrl = '';
       }
 
@@ -263,11 +281,32 @@ class UserService {
     try {
       String? imageUrl;
 
+      // Get current banner image URL to delete old image
+      String? oldImageUrl;
+      try {
+        final userData = await getUserData(userId);
+        oldImageUrl = userData?['bannerImageUrl'];
+      } catch (e) {
+        // Ignore error, continue with update
+      }
+
       if (imageFile != null) {
         // Upload new image to Cloudinary
         imageUrl = await uploadBannerImage(userId, imageFile);
+
+        // Delete old image from Cloudinary if it exists
+        if (oldImageUrl != null &&
+            oldImageUrl.isNotEmpty &&
+            _cloudinaryService.isCloudinaryUrl(oldImageUrl)) {
+          await _cloudinaryService.deleteImageByUrl(oldImageUrl);
+        }
       } else {
-        // Remove image
+        // Remove image - delete from Cloudinary if it exists
+        if (oldImageUrl != null &&
+            oldImageUrl.isNotEmpty &&
+            _cloudinaryService.isCloudinaryUrl(oldImageUrl)) {
+          await _cloudinaryService.deleteImageByUrl(oldImageUrl);
+        }
         imageUrl = '';
       }
 
@@ -282,6 +321,4 @@ class UserService {
       throw Exception('Failed to update banner image: ${e.toString()}');
     }
   }
-
-
 }

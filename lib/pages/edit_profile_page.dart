@@ -7,6 +7,7 @@ import '../core/theme/app_theme.dart';
 import '../core/widgets/gradient_button.dart';
 import '../core/utils/toast_helper.dart';
 import '../core/services/user_service.dart';
+import '../core/config/cloudinary_config.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
@@ -146,9 +147,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     key: _formKey,
                     child: Column(
                       children: [
-                        _buildBannerImage(),
-                        const SizedBox(height: 20),
                         _buildProfilePicture(),
+                        const SizedBox(height: 20),
+                        _buildBannerImage(),
                         const SizedBox(height: 32),
                         _buildTextField(
                           controller: _nameController,
@@ -226,6 +227,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               fontWeight: FontWeight.bold,
             ),
           ),
+          const Spacer(),
         ],
       ),
     );
@@ -247,10 +249,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 ? Stack(
                     fit: StackFit.expand,
                     children: [
-                      Image.file(
-                        _selectedBannerImage!,
-                        fit: BoxFit.cover,
-                      ),
+                      Image.file(_selectedBannerImage!, fit: BoxFit.cover),
                       Container(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
@@ -267,7 +266,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     ],
                   )
                 : _userData['bannerImageUrl'] != null &&
-                    _userData['bannerImageUrl'].toString().isNotEmpty
+                      _userData['bannerImageUrl'].toString().isNotEmpty
                 ? Stack(
                     fit: StackFit.expand,
                     children: [
@@ -345,11 +344,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      Icons.camera_alt,
-                      color: Colors.white,
-                      size: 16,
-                    ),
+                    Icon(Icons.camera_alt, color: Colors.white, size: 16),
                     SizedBox(width: 6),
                     Text(
                       'Change Banner',
@@ -363,7 +358,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 ),
               ),
             ),
-            if (_selectedBannerImage != null || (_userData['bannerImageUrl'] != null && _userData['bannerImageUrl'].toString().isNotEmpty))
+            if (_selectedBannerImage != null ||
+                (_userData['bannerImageUrl'] != null &&
+                    _userData['bannerImageUrl'].toString().isNotEmpty))
               Padding(
                 padding: const EdgeInsets.only(left: 12),
                 child: GestureDetector(
@@ -713,13 +710,40 @@ class _EditProfilePageState extends State<EditProfilePage> {
       );
 
       if (pickedFile != null) {
+        // Validate file size
+        final file = File(pickedFile.path);
+        final fileSize = await file.length();
+
+        if (fileSize > CloudinaryConfig.maxProfileImageSize) {
+          if (mounted) {
+            ToastHelper.error(
+              context,
+              'Image too large. Please select an image smaller than 5MB.',
+            );
+          }
+          return;
+        }
+
+        // Validate file format
+        final extension = pickedFile.path.split('.').last.toLowerCase();
+        if (!CloudinaryConfig.supportedFormats.contains(extension) &&
+            !['jpg', 'jpeg'].contains(extension)) {
+          if (mounted) {
+            ToastHelper.error(
+              context,
+              'Unsupported format. Please select a JPG, PNG, or WebP image.',
+            );
+          }
+          return;
+        }
+
         setState(() {
-          _selectedImage = File(pickedFile.path);
+          _selectedImage = file;
         });
       }
     } catch (e) {
       if (mounted) {
-        ToastHelper.uploadError(context, itemName: 'image');
+        ToastHelper.error(context, 'Failed to select image: ${e.toString()}');
       }
     }
   }
@@ -736,13 +760,43 @@ class _EditProfilePageState extends State<EditProfilePage> {
       );
 
       if (pickedFile != null) {
+        // Validate file size
+        final file = File(pickedFile.path);
+        final fileSize = await file.length();
+
+        if (fileSize > CloudinaryConfig.maxBannerImageSize) {
+          if (mounted) {
+            ToastHelper.error(
+              context,
+              'Image too large. Please select an image smaller than 10MB.',
+            );
+          }
+          return;
+        }
+
+        // Validate file format
+        final extension = pickedFile.path.split('.').last.toLowerCase();
+        if (!CloudinaryConfig.supportedFormats.contains(extension) &&
+            !['jpg', 'jpeg'].contains(extension)) {
+          if (mounted) {
+            ToastHelper.error(
+              context,
+              'Unsupported format. Please select a JPG, PNG, or WebP image.',
+            );
+          }
+          return;
+        }
+
         setState(() {
-          _selectedBannerImage = File(pickedFile.path);
+          _selectedBannerImage = file;
         });
       }
     } catch (e) {
       if (mounted) {
-        ToastHelper.uploadError(context, itemName: 'banner image');
+        ToastHelper.error(
+          context,
+          'Failed to select banner image: ${e.toString()}',
+        );
       }
     }
   }
@@ -787,7 +841,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
           setState(() {
             _isUploadingImage = true;
           });
-          profileImageUrl = await _userService.updateProfileImage(userId, _selectedImage);
+          profileImageUrl = await _userService.updateProfileImage(
+            userId,
+            _selectedImage,
+          );
           setState(() {
             _isUploadingImage = false;
           });
@@ -814,7 +871,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
       // Try to update banner image if changed (requires internet)
       if (_selectedBannerImage != null) {
         try {
-          bannerImageUrl = await _userService.updateBannerImage(userId, _selectedBannerImage);
+          bannerImageUrl = await _userService.updateBannerImage(
+            userId,
+            _selectedBannerImage,
+          );
         } catch (imageError) {
           if (mounted) {
             ToastHelper.warning(

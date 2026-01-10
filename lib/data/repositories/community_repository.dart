@@ -97,6 +97,21 @@ class CommunityRepository {
 
     try {
       final docRef = await _firestoreService.addDocument('communities', data);
+
+      // Automatically add the creator as a member
+      await _firestoreService.addDocument('communities/${docRef.id}/members', {
+        'userId': createdBy,
+        'joinedAt': now,
+        'role': 'owner',
+        'isActive': true,
+      });
+
+      // Add community to user's joined communities
+      await _firestoreService.updateDocument('users', createdBy, {
+        'joinedCommunities': FieldValue.arrayUnion([docRef.id]),
+        'updatedAt': now,
+      });
+
       final doc = await _firestoreService.getDocument('communities', docRef.id);
       return CommunityApiModel.fromFirestore(doc).toDomain();
     } catch (e) {

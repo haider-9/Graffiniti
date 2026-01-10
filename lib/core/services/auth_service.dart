@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -65,35 +66,37 @@ class AuthService {
         return;
       }
 
-      // Check if user was signed in with Google
-      bool wasGoogleSignIn = false;
-      for (final providerData in user.providerData) {
-        if (providerData.providerId == 'google.com') {
-          wasGoogleSignIn = true;
-          break;
+      if (!kIsWeb) {
+        // Only handle Google Sign-In package sign out on mobile platforms
+        bool wasGoogleSignIn = false;
+        for (final providerData in user.providerData) {
+          if (providerData.providerId == 'google.com') {
+            wasGoogleSignIn = true;
+            break;
+          }
         }
-      }
 
-      // Sign out from Google if user was signed in with Google
-      if (wasGoogleSignIn) {
+        // Sign out from Google if user was signed in with Google
+        if (wasGoogleSignIn) {
+          try {
+            await _googleSignIn.signOut();
+          } catch (e) {
+            // Google sign out failed, but continue with Firebase sign out
+            print('Google sign out failed: $e');
+          }
+        }
+
+        // Clear any cached Google sign-in data
         try {
-          await _googleSignIn.signOut();
+          await _googleSignIn.disconnect();
         } catch (e) {
-          // Google sign out failed, but continue with Firebase sign out
-          print('Google sign out failed: $e');
+          // Disconnect failed, but that's okay
+          print('Google disconnect failed: $e');
         }
       }
 
-      // Always sign out from Firebase (handles email/password, anonymous, and Google)
+      // Always sign out from Firebase (handles all platforms and providers)
       await _auth.signOut();
-
-      // Clear any cached Google sign-in data
-      try {
-        await _googleSignIn.disconnect();
-      } catch (e) {
-        // Disconnect failed, but that's okay
-        print('Google disconnect failed: $e');
-      }
     } catch (e) {
       throw Exception('Sign out failed: ${e.toString()}');
     }
@@ -111,38 +114,103 @@ class AuthService {
   // Sign in with Google
   Future<UserCredential?> signInWithGoogle() async {
     try {
-      // Trigger the authentication flow
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (kIsWeb) {
+        // For web, use Firebase Auth's built-in Google provider
+        GoogleAuthProvider googleProvider = GoogleAuthProvider();
 
-      if (googleUser == null) {
-        // User canceled the sign-in
-        return null;
-      }
+        // Optional: Add custom parameters
+        googleProvider.addScope('email');
+        googleProvider.addScope('profile');
 
-      // Obtain the auth details from the request
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
+        // Sign in with popup
+        UserCredential result = await _auth.signInWithPopup(googleProvider);
 
-      // Create a new credential
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
+        // Create or update user document in Firestore
+        if (result.user != null) {
+          await _createOrUpdateUserDocument(
+            result.user!,
+            isNewUser: result.additionalUserInfo?.isNewUser ?? false,
+          );
+        }
 
-      // Sign in to Firebase with the Google credential
-      UserCredential result = await _auth.signInWithCredential(credential);
+        return result;
+      } else {
+        // For mobile platforms, use google_sign_in package
+        final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
-      // Create or update user document in Firestore
-      if (result.user != null) {
-        await _createOrUpdateUserDocument(
-          result.user!,
-          isNewUser: result.additionalUserInfo?.isNewUser ?? false,
+        if (googleUser == null) {
+          // User canceled the sign-in
+          return null;
+        }
+
+        // Obtain the auth details from the request
+        final GoogleSignInAuthentication googleAuth =
+            await googleUser.authentication;
+
+        // Check if we got the required tokens
+        if (googleAuth.accessToken == null || googleAuth.idToken == null) {
+          throw Exception('Failed to get Google authentication tokens');
+        }
+
+        // Create a new credential
+        final credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
         );
-      }
 
-      return result;
+        // Sign in to Firebase with the Google credential
+        UserCredential result = await _auth.signInWithCredential(credential);
+
+        // Create or update user document in Firestore
+        if (result.user != null) {
+          await _createOrUpdateUserDocument(
+            result.user!,
+            isNewUser: result.additionalUserInfo?.isNewUser ?? false,
+          );
+        }
+
+        return result;
+      }
+    } on FirebaseAuthException catch (e) {
+      String errorMessage;
+      switch (e.code) {
+        case 'account-exists-with-different-credential':
+          errorMessage =
+              'An account already exists with a different sign-in method.';
+          break;
+        case 'invalid-credential':
+          errorMessage = 'The credential is invalid or expired.';
+          break;
+        case 'operation-not-allowed':
+          errorMessage =
+              'Google sign-in is not enabled. Please contact support.';
+          break;
+        case 'user-disabled':
+          errorMessage = 'This account has been disabled.';
+          break;
+        case 'user-not-found':
+          errorMessage = 'No account found with this credential.';
+          break;
+        case 'wrong-password':
+          errorMessage = 'Invalid credential provided.';
+          break;
+        default:
+          errorMessage = 'Google sign-in failed: ${e.message}';
+      }
+      throw Exception(errorMessage);
     } catch (e) {
-      throw Exception('Google sign in failed: ${e.toString()}');
+      // Handle other types of errors
+      if (e.toString().contains('network_error')) {
+        throw Exception(
+          'Network error. Please check your internet connection.',
+        );
+      } else if (e.toString().contains('sign_in_canceled')) {
+        throw Exception('Sign-in was canceled.');
+      } else if (e.toString().contains('sign_in_failed')) {
+        throw Exception('Google sign-in failed. Please try again.');
+      } else {
+        throw Exception('Google sign-in failed: ${e.toString()}');
+      }
     }
   }
 
@@ -205,16 +273,31 @@ class AuthService {
         throw Exception('No anonymous user to link');
       }
 
-      // Get Google credentials
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return null;
+      AuthCredential credential;
 
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
+      if (kIsWeb) {
+        // For web, use Firebase Auth's built-in Google provider
+        GoogleAuthProvider googleProvider = GoogleAuthProvider();
+        googleProvider.addScope('email');
+        googleProvider.addScope('profile');
+
+        // Get credential from popup
+        UserCredential tempResult = await _auth.signInWithPopup(googleProvider);
+        credential = GoogleAuthProvider.credential(
+          idToken: await tempResult.user?.getIdToken(),
+        );
+      } else {
+        // For mobile, use google_sign_in package
+        final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+        if (googleUser == null) return null;
+
+        final GoogleSignInAuthentication googleAuth =
+            await googleUser.authentication;
+        credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+      }
 
       // Link the credential to the anonymous user
       UserCredential result = await _auth.currentUser!.linkWithCredential(

@@ -79,7 +79,7 @@ class _LoginPageState extends State<LoginPage> {
       if (mounted) {
         ToastHelper.authError(
           context,
-          'Google sign-in failed. Please try again.',
+          'Google sign-in failed. Please try again. $e',
         );
       }
     } finally {

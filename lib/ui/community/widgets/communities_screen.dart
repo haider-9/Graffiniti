@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:griffiniti/domain/models/community.dart';
 import 'package:provider/provider.dart';
 import '../view_model/community_view_model.dart';
 import 'community_card.dart';
 import 'community_detail_screen.dart';
 import 'create_community_screen.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/services/community_service.dart';
+import '../../../core/services/auth_service.dart';
+import '../../../core/widgets/account_upgrade_dialog.dart';
+import '../../../core/utils/toast_helper.dart';
+import '../../../pages/community_members_page.dart';
+import '../../../models/community.dart' as lib_models;
 
 class CommunitiesScreen extends StatefulWidget {
   const CommunitiesScreen({super.key});
@@ -15,12 +22,18 @@ class CommunitiesScreen extends StatefulWidget {
 
 class _CommunitiesScreenState extends State<CommunitiesScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final CommunityService _communityService = CommunityService();
+  final AuthService _authService = AuthService();
+  List<String> _joinedCommunityIds = [];
+  final Map<String, bool> _joiningStates =
+      {}; // Track joining states per community
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<CommunityViewModel>().loadCommunities();
+      _loadJoinedCommunities();
     });
   }
 
@@ -35,6 +48,98 @@ class _CommunitiesScreenState extends State<CommunitiesScreen> {
     context.read<CommunityViewModel>().clearSearch();
   }
 
+  Future<void> _loadJoinedCommunities() async {
+    try {
+      final joinedIds = await _communityService.getUserJoinedCommunities();
+      setState(() {
+        _joinedCommunityIds = joinedIds;
+      });
+    } catch (e) {
+      // Handle error silently for now
+    }
+  }
+
+  bool _isJoined(String communityId) {
+    return _joinedCommunityIds.contains(communityId);
+  }
+
+  Future<void> _toggleJoinCommunity(String communityId) async {
+    // Check if user is anonymous
+    if (_authService.isAnonymous) {
+      _showUpgradeAccountDialog();
+      return;
+    }
+
+    // Prevent multiple simultaneous join/leave operations
+    if (_joiningStates[communityId] == true) {
+      return;
+    }
+
+    setState(() {
+      _joiningStates[communityId] = true;
+    });
+
+    try {
+      final wasJoined = _isJoined(communityId);
+
+      if (wasJoined) {
+        await _communityService.leaveCommunity(communityId);
+        setState(() {
+          _joinedCommunityIds.remove(communityId);
+        });
+        if (mounted) {
+          ToastHelper.success(context, 'Left community successfully');
+        }
+      } else {
+        await _communityService.joinCommunity(communityId);
+        setState(() {
+          _joinedCommunityIds.add(communityId);
+        });
+        if (mounted) {
+          ToastHelper.success(context, 'Joined community successfully');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        final action = _isJoined(communityId) ? 'leave' : 'join';
+        ToastHelper.error(context, 'Failed to $action community');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _joiningStates[communityId] = false;
+        });
+      }
+    }
+  }
+
+  void _showUpgradeAccountDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => const AccountUpgradeDialog(),
+    );
+  }
+
+  void _navigateToMembers(Community community) {
+    // Convert domain Community to the Community model expected by CommunityMembersPage
+    final simpleCommunity = lib_models.Community(
+      id: community.id,
+      name: community.name,
+      description: community.description,
+      imageUrl: community.photoUrl,
+      memberCount: community.stats.memberCount,
+      isJoined: _isJoined(community.id),
+      tags: community.tags,
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CommunityMembersPage(community: simpleCommunity),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -43,17 +148,18 @@ class _CommunitiesScreenState extends State<CommunitiesScreen> {
         backgroundColor: AppTheme.primaryBlack,
         title: const Text('Communities', style: TextStyle(color: Colors.white)),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.add, color: Colors.white),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const CreateCommunityScreen(),
-                ),
-              );
-            },
-          ),
+          if (!_authService.isAnonymous)
+            IconButton(
+              icon: const Icon(Icons.add, color: Colors.white),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CreateCommunityScreen(),
+                  ),
+                );
+              },
+            ),
         ],
       ),
       body: Container(
@@ -136,6 +242,8 @@ class _CommunitiesScreenState extends State<CommunitiesScreen> {
                         final community = viewModel.communities[index];
                         return CommunityCard(
                           community: community,
+                          isJoined: _isJoined(community.id),
+                          isJoining: _joiningStates[community.id] ?? false,
                           onTap: () {
                             Navigator.push(
                               context,
@@ -145,6 +253,8 @@ class _CommunitiesScreenState extends State<CommunitiesScreen> {
                               ),
                             );
                           },
+                          onJoin: () => _toggleJoinCommunity(community.id),
+                          onMembersView: () => _navigateToMembers(community),
                         );
                       },
                     ),
@@ -246,6 +356,8 @@ class _CommunitiesScreenState extends State<CommunitiesScreen> {
         final community = viewModel.searchResults[index];
         return CommunityCard(
           community: community,
+          isJoined: _isJoined(community.id),
+          isJoining: _joiningStates[community.id] ?? false,
           onTap: () {
             Navigator.push(
               context,
@@ -255,6 +367,8 @@ class _CommunitiesScreenState extends State<CommunitiesScreen> {
               ),
             );
           },
+          onJoin: () => _toggleJoinCommunity(community.id),
+          onMembersView: () => _navigateToMembers(community),
         );
       },
     );

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
 import '../core/widgets/glassmorphic_container.dart';
+import '../core/services/share_service.dart';
+import '../core/utils/toast_helper.dart';
 
 class DiscoverPage extends StatefulWidget {
   const DiscoverPage({super.key});
@@ -121,7 +123,7 @@ class _DiscoverPageState extends State<DiscoverPage>
             children: [
               GestureDetector(
                 onTap: () {
-                  // Search functionality
+                  ToastHelper.info(context, 'Search functionality coming soon!');
                 },
                 child: GlassmorphicContainer(
                   width: 44,
@@ -137,7 +139,7 @@ class _DiscoverPageState extends State<DiscoverPage>
               const SizedBox(width: 12),
               GestureDetector(
                 onTap: () {
-                  // Map view
+                  ToastHelper.info(context, 'Map view coming soon!');
                 },
                 child: Container(
                   padding: const EdgeInsets.all(12),
@@ -376,49 +378,79 @@ class _DiscoverPageState extends State<DiscoverPage>
                         children: [
                           Row(
                             children: [
-                              Icon(
-                                Icons.favorite_outline,
-                                size: 20,
-                                color: AppTheme.secondaryText,
+                              GestureDetector(
+                                onTap: () {
+                                  ToastHelper.info(context, 'Liked ${graffiti['title']}!');
+                                },
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.favorite_outline,
+                                      size: 20,
+                                      color: AppTheme.secondaryText,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${graffiti['likes']}',
+                                      style: const TextStyle(
+                                        color: AppTheme.secondaryText,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${graffiti['likes']}',
-                                style: const TextStyle(
+                              const SizedBox(width: 16),
+                              GestureDetector(
+                                onTap: () async {
+                                  await ShareService.shareGraffiti(
+                                    title: graffiti['title'],
+                                    artistName: graffiti['artist'],
+                                    location: graffiti['location'],
+                                    graffitiId: graffiti['id'],
+                                  );
+                                },
+                                child: Icon(
+                                  Icons.share_outlined,
+                                  size: 20,
                                   color: AppTheme.secondaryText,
-                                  fontSize: 14,
                                 ),
                               ),
                             ],
                           ),
 
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              gradient: AppTheme.primaryGradient,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.view_in_ar,
-                                  size: 16,
-                                  color: Colors.white,
-                                ),
-                                SizedBox(width: 4),
-                                Text(
-                                  'View in AR',
-                                  style: TextStyle(
+                          GestureDetector(
+                            onTap: () {
+                              ToastHelper.info(context, 'AR view coming soon!');
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: AppTheme.primaryGradient,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.view_in_ar,
+                                    size: 16,
                                     color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
                                   ),
-                                ),
-                              ],
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'View in AR',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],

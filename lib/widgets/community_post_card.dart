@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
 import '../models/community_post.dart';
+import '../core/services/share_service.dart';
 
 class CommunityPostCard extends StatelessWidget {
   final CommunityPost post;
@@ -94,7 +95,7 @@ class CommunityPostCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          
+
           // Author info
           Expanded(
             child: Column(
@@ -142,7 +143,7 @@ class CommunityPostCard extends StatelessWidget {
               ],
             ),
           ),
-          
+
           // More button
           IconButton(
             icon: const Icon(
@@ -206,7 +207,14 @@ class CommunityPostCard extends StatelessWidget {
             icon: Icons.share_outlined,
             label: 'Share',
             color: Colors.white,
-            onTap: () {},
+            onTap: () async {
+              await ShareService.shareGraffiti(
+                title: post.title.isNotEmpty ? post.title : 'Community Post',
+                artistName: post.username,
+                location: null,
+                graffitiId: post.id,
+              );
+            },
           ),
           const Spacer(),
           GestureDetector(

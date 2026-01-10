@@ -3,16 +3,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:dio/dio.dart';
 import 'dart:io';
 import 'dart:typed_data';
+import 'cloudinary_service.dart';
 
 class UserService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final Dio _dio = Dio();
-
-  // Cloudinary configuration
-  static const String _cloudName = 'dntncz9no';
-  static const String _uploadPreset = 'unsigned_preset';
-  static const String _baseUrl = 'https://api.cloudinary.com/v1_1/$_cloudName';
+  final CloudinaryService _cloudinaryService = CloudinaryService();
 
   // Get current user ID
   String? get currentUserId => _auth.currentUser?.uid;
@@ -221,8 +218,7 @@ class UserService {
   // Upload profile image to Cloudinary
   Future<String> uploadProfileImage(String userId, File imageFile) async {
     try {
-      final fileName = 'profile_${userId}_${DateTime.now().millisecondsSinceEpoch}';
-      return await _uploadImageToCloudinary(imageFile, fileName, 'profile_images');
+      return await _cloudinaryService.uploadProfileImage(userId, imageFile);
     } catch (e) {
       throw Exception('Failed to upload profile image: ${e.toString()}');
     }
@@ -256,8 +252,7 @@ class UserService {
   // Upload banner image to Cloudinary
   Future<String> uploadBannerImage(String userId, File imageFile) async {
     try {
-      final fileName = 'banner_${userId}_${DateTime.now().millisecondsSinceEpoch}';
-      return await _uploadImageToCloudinary(imageFile, fileName, 'banner_images');
+      return await _cloudinaryService.uploadBannerImage(userId, imageFile);
     } catch (e) {
       throw Exception('Failed to upload banner image: ${e.toString()}');
     }
@@ -288,57 +283,5 @@ class UserService {
     }
   }
 
-  // Generic method to upload image to Cloudinary
-  Future<String> _uploadImageToCloudinary(File imageFile, String fileName, String folder) async {
-    try {
-      // Read image file as bytes
-      final Uint8List imageBytes = await imageFile.readAsBytes();
 
-      // Create form data
-      final formData = FormData.fromMap({
-        'file': MultipartFile.fromBytes(
-          imageBytes,
-          filename: '$fileName.jpg',
-        ),
-        'upload_preset': _uploadPreset,
-        'folder': folder,
-        'public_id': fileName,
-        'resource_type': 'image',
-        'format': 'jpg',
-      });
-
-      // Upload to Cloudinary
-      final response = await _dio.post(
-        '$_baseUrl/image/upload',
-        data: formData,
-        options: Options(
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-          receiveTimeout: const Duration(seconds: 30),
-          sendTimeout: const Duration(seconds: 30),
-        ),
-      );
-
-      if (response.statusCode == 200) {
-        final responseData = response.data;
-        return responseData['secure_url'] as String;
-      } else {
-        throw Exception('Upload failed with status: ${response.statusCode}');
-      }
-    } catch (e) {
-      if (e is DioException) {
-        if (e.type == DioExceptionType.connectionTimeout ||
-            e.type == DioExceptionType.receiveTimeout ||
-            e.type == DioExceptionType.sendTimeout) {
-          throw Exception('Upload timeout. Please check your internet connection.');
-        } else if (e.type == DioExceptionType.connectionError) {
-          throw Exception('Connection error. Please check your internet connection.');
-        } else {
-          throw Exception('Upload failed: ${e.message}');
-        }
-      }
-      throw Exception('Upload failed: ${e.toString()}');
-    }
-  }
 }

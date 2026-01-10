@@ -30,6 +30,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   bool _isUploadingImage = false;
   Map<String, dynamic> _userData = {};
   File? _selectedImage;
+  File? _selectedBannerImage;
   final ImagePicker _imagePicker = ImagePicker();
 
   @override
@@ -145,6 +146,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     key: _formKey,
                     child: Column(
                       children: [
+                        _buildBannerImage(),
+                        const SizedBox(height: 20),
                         _buildProfilePicture(),
                         const SizedBox(height: 32),
                         _buildTextField(
@@ -225,6 +228,163 @@ class _EditProfilePageState extends State<EditProfilePage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildBannerImage() {
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          height: 150,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: _selectedBannerImage != null
+                ? Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.file(
+                        _selectedBannerImage!,
+                        fit: BoxFit.cover,
+                      ),
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                            colors: [
+                              Colors.black.withValues(alpha: 0.4),
+                              Colors.transparent,
+                            ],
+                            stops: const [0.0, 0.6],
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                : _userData['bannerImageUrl'] != null &&
+                    _userData['bannerImageUrl'].toString().isNotEmpty
+                ? Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.network(
+                        _userData['bannerImageUrl'],
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: AppTheme.secondaryBlack,
+                            child: const Center(
+                              child: Icon(
+                                Icons.image_outlined,
+                                color: AppTheme.secondaryText,
+                                size: 48,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                            colors: [
+                              Colors.black.withValues(alpha: 0.4),
+                              Colors.transparent,
+                            ],
+                            stops: const [0.0, 0.6],
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                : Container(
+                    color: AppTheme.secondaryBlack,
+                    child: const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.image_outlined,
+                            color: AppTheme.secondaryText,
+                            size: 48,
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'Add Banner Image',
+                            style: TextStyle(
+                              color: AppTheme.secondaryText,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            GestureDetector(
+              onTap: () => _showBannerImagePickerDialog(),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  gradient: AppTheme.primaryGradient,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.camera_alt,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                    SizedBox(width: 6),
+                    Text(
+                      'Change Banner',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (_selectedBannerImage != null || (_userData['bannerImageUrl'] != null && _userData['bannerImageUrl'].toString().isNotEmpty))
+              Padding(
+                padding: const EdgeInsets.only(left: 12),
+                child: GestureDetector(
+                  onTap: () => _removeBannerImage(),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.accentGray,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Icon(
+                      Icons.delete_outline,
+                      color: AppTheme.accentRed,
+                      size: 16,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -465,6 +625,58 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
+  void _showBannerImagePickerDialog() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.secondaryBlack,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppTheme.accentGray,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Change Banner Image',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildImageOption(
+                  'Camera',
+                  Icons.camera_alt,
+                  () => _pickBannerImage(ImageSource.camera),
+                ),
+                _buildImageOption(
+                  'Gallery',
+                  Icons.photo_library,
+                  () => _pickBannerImage(ImageSource.gallery),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildImageOption(String label, IconData icon, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
@@ -512,11 +724,41 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }
   }
 
+  Future<void> _pickBannerImage(ImageSource source) async {
+    Navigator.pop(context); // Close the bottom sheet
+
+    try {
+      final XFile? pickedFile = await _imagePicker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 512,
+        imageQuality: 85,
+      );
+
+      if (pickedFile != null) {
+        setState(() {
+          _selectedBannerImage = File(pickedFile.path);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ToastHelper.uploadError(context, itemName: 'banner image');
+      }
+    }
+  }
+
   void _removeImage() {
     Navigator.pop(context); // Close the bottom sheet
     setState(() {
       _selectedImage = null;
       _userData['profileImageUrl'] = '';
+    });
+  }
+
+  void _removeBannerImage() {
+    setState(() {
+      _selectedBannerImage = null;
+      _userData['bannerImageUrl'] = '';
     });
   }
 
@@ -537,6 +779,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       }
 
       String? profileImageUrl;
+      String? bannerImageUrl;
 
       // Try to update profile image if changed (requires internet)
       if (_selectedImage != null) {
@@ -568,6 +811,27 @@ class _EditProfilePageState extends State<EditProfilePage> {
         }
       }
 
+      // Try to update banner image if changed (requires internet)
+      if (_selectedBannerImage != null) {
+        try {
+          bannerImageUrl = await _userService.updateBannerImage(userId, _selectedBannerImage);
+        } catch (imageError) {
+          if (mounted) {
+            ToastHelper.warning(
+              context,
+              'Banner image upload failed. Other changes will be saved.',
+            );
+          }
+        }
+      } else if (_userData['bannerImageUrl'] == '') {
+        // Remove banner image
+        try {
+          bannerImageUrl = await _userService.updateBannerImage(userId, null);
+        } catch (e) {
+          // Ignore if offline
+        }
+      }
+
       // Update Firebase Auth display name first (works offline)
       if (_nameController.text.trim() != _auth.currentUser?.displayName) {
         await _auth.currentUser?.updateDisplayName(_nameController.text.trim());
@@ -582,6 +846,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
           location: _locationController.text.trim(),
           website: _websiteController.text.trim(),
           profileImageUrl: profileImageUrl,
+          bannerImageUrl: bannerImageUrl,
         );
 
         if (mounted) {

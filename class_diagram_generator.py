@@ -1,0 +1,872 @@
+#!/usr/bin/env python3
+"""
+Graffiniti Flutter App - Class Diagram Generator
+This script generates a comprehensive UML class diagram for the Graffiniti Flutter application
+using PlantUML syntax for AR-based graffiti social platform.
+"""
+
+def generate_class_diagram():
+    """Generate PlantUML class diagram for Graffiniti app"""
+
+    plantuml_code = '''@startuml GraffitiAppClassDiagram
+!theme plain
+title Graffiniti Flutter App - Class Diagram
+skinparam classAttributeIconSize 0
+skinparam classFontSize 10
+skinparam packageStyle rectangle
+
+' Core Application Package
+package "main" {
+    class MyApp {
+        +Widget build(BuildContext context)
+    }
+
+    class MainNavigation {
+        -PageController _pageController
+        -int _currentIndex
+        -List<Widget> _pages
+        +void initState()
+        +void dispose()
+        +Widget build(BuildContext context)
+    }
+}
+
+' Dependencies & Configuration
+package "config" {
+    class Dependencies {
+        +{static} List<SingleChildWidget> getProviders()
+    }
+}
+
+' Core Services Package
+package "core.services" {
+    abstract class ARService {
+        +List<ARSticker> stickers
+        +Stream<List<ARSticker>> stickersStream
+        +Stream<bool> trackingStateStream
+        +Future<String?> addSticker(ARSticker, Vector3)
+        +Future<void> removeSticker(String)
+        +Future<void> updateStickerTransform(String, Vector3?, Vector3?, Vector3?)
+        +Future<void> clearAllStickers()
+        +Vector3? hitTestPlane(Offset)
+        +Future<List<Map<String, dynamic>>> exportStickers()
+        +Future<void> importStickers(List<Map<String, dynamic>>)
+        +void dispose()
+    }
+
+    class ARProductionService {
+        +Future<String?> addSticker(ARSticker, Vector3)
+        +Future<void> removeSticker(String)
+        +Vector3? hitTestPlane(Offset)
+    }
+
+    class ARMockService {
+        -List<ARSticker> _stickers
+        -StreamController<List<ARSticker>> _stickersController
+        -StreamController<bool> _trackingController
+        +Future<String?> addSticker(ARSticker, Vector3)
+        +Future<void> removeSticker(String)
+    }
+
+    class ARSphereService {
+        +Future<void> initializeAR()
+        +Future<void> addSphere(Vector3)
+        +void dispose()
+    }
+
+    class AuthService {
+        +Future<User?> signInWithEmailAndPassword(String, String)
+        +Future<User?> signUpWithEmailAndPassword(String, String)
+        +Future<void> signOut()
+        +Stream<User?> get authStateChanges
+    }
+
+    class UserService {
+        -FirebaseFirestore _firestore
+        -FirebaseAuth _auth
+        -Dio _dio
+        -{static} String _cloudName
+        -{static} String _uploadPreset
+        -{static} String _baseUrl
+        +String? get currentUserId
+        +Stream<DocumentSnapshot> getUserStream(String)
+        +Future<Map<String, dynamic>?> getUserData(String)
+        +Future<void> updateUserProfile(...)
+        +Future<void> updateUserStats(...)
+        +Stream<QuerySnapshot> getUserGraffiti(String)
+        +Future<void> createUserDocument(String, String, String)
+        +Future<void> toggleFollow(String)
+        +Stream<bool> isFollowing(String)
+        +Future<String> uploadProfileImage(String, File)
+        +Future<String> uploadBannerImage(String, File)
+        +Future<String?> updateProfileImage(String, File?)
+        +Future<String?> updateBannerImage(String, File?)
+        -Future<String> _uploadImageToCloudinary(File, String, String)
+    }
+
+    class CloudinaryService {
+        -Dio _dio
+        +Future<String> uploadProfileImage(String, File)
+        +Future<String> uploadBannerImage(String, File)
+        +Future<String> uploadGraffitiImage(String, File)
+        -Future<String> _uploadImage(File, String, String)
+        +Future<bool> deleteImage(String)
+        +String getOptimizedImageUrl(String, ...)
+        +String getThumbnailUrl(String, int)
+        +String getProfileImageUrl(String)
+        +String getBannerImageUrl(String)
+        +Future<String> uploadImageFromBytes(Uint8List, String, String)
+        +bool isCloudinaryUrl(String)
+        +String? extractPublicId(String)
+    }
+
+    class MediaService {
+        +{static} Future<bool> saveImageToGallery(BuildContext, String)
+        +{static} Future<void> deleteTempFile(String)
+    }
+}
+
+' Core Managers Package
+package "core.managers" {
+    enum ARMode {
+        viewing
+        placing
+        editing
+    }
+
+    class ARStickerManager {
+        -ARService _arService
+        -ARMode _currentMode
+        -ARSticker? _selectedSticker
+        -ARStickerTemplate? _selectedTemplate
+        -String? _editingStickerId
+        -bool _isPlacementMode
+        -bool _showPlanes
+        -bool _isDragging
+        -bool _isScaling
+        -bool _isRotating
+        -double _initialScale
+        -double _currentScale
+        -double _initialRotation
+        -double _currentRotation
+        +ARMode get currentMode
+        +ARSticker? get selectedSticker
+        +List<ARSticker> get stickers
+        +Stream<List<ARSticker>> get stickersStream
+        +void setMode(ARMode)
+        +void enterPlacementMode(ARStickerTemplate)
+        +void exitPlacementMode()
+        +void enterEditMode(String)
+        +void exitEditMode()
+        +Future<bool> placeStickerAtScreenPosition(Offset)
+        +void onTapDown(TapDownDetails)
+        +void onTap(TapUpDetails)
+        +void onPanStart(DragStartDetails)
+        +void onPanUpdate(DragUpdateDetails)
+        +void onPanEnd(DragEndDetails)
+        +void onScaleStart(ScaleStartDetails)
+        +void onScaleUpdate(ScaleUpdateDetails)
+        +void onScaleEnd(ScaleEndDetails)
+        +void onRotationStart(double)
+        +void onRotationUpdate(double)
+        +void onRotationEnd()
+        +Future<void> deleteSticker(String)
+        +Future<void> duplicateSticker(String)
+        +Future<void> clearAllStickers()
+        +void togglePlaneVisibility()
+        +Future<Map<String, dynamic>> exportSession()
+        +Future<void> importSession(Map<String, dynamic>)
+        -void _trySelectStickerAtPosition(Offset)
+        -Vector3 _screenToWorldDelta(Offset)
+        -String _generateStickerId()
+    }
+}
+
+' Core Utils Package
+package "core.utils" {
+    class PermissionHelper {
+        +{static} Future<bool> requestCameraPermission(BuildContext)
+        +{static} Future<bool> requestStoragePermission(BuildContext)
+        +{static} Future<bool> requestLocationPermission(BuildContext)
+    }
+
+    class ToastHelper {
+        +{static} void success(BuildContext, String)
+        +{static} void error(BuildContext, String)
+        +{static} void warning(BuildContext, String)
+        +{static} void info(BuildContext, String)
+        +{static} void uploadError(BuildContext, String)
+        +{static} void updateSuccess(BuildContext, String)
+    }
+}
+
+' Core Widgets Package
+package "core.widgets" {
+    class AuthWrapper {
+        +Widget build(BuildContext)
+    }
+
+    class CustomBottomNavigation {
+        +int currentIndex
+        +Function(int) onTap
+        +Widget build(BuildContext)
+    }
+
+    class FilterChipWidget {
+        +String label
+        +bool isSelected
+        +VoidCallback onTap
+        +Widget build(BuildContext)
+    }
+
+    class GlassmorphicContainer {
+        +Widget child
+        +double blur
+        +double opacity
+        +BorderRadius? borderRadius
+        +Widget build(BuildContext)
+    }
+
+    class GradientButton {
+        +String text
+        +VoidCallback onPressed
+        +List<Color> gradientColors
+        +Widget build(BuildContext)
+    }
+
+    class ToastNotification {
+        +String message
+        +ToastType type
+        +Widget build(BuildContext)
+    }
+}
+
+' Core Theme Package
+package "core.theme" {
+    class AppTheme {
+        +{static} Color primaryOrange
+        +{static} Color primaryBlue
+        +{static} Color primaryTeal
+        +{static} Color primaryGreen
+        +{static} Color primaryBlack
+        +{static} Color darkGrey
+        +{static} Color lightGrey
+        +{static} ThemeData darkTheme
+    }
+}
+
+' Models Package
+package "models" {
+    enum StickerType {
+        emoji
+        text
+        image
+        shape
+    }
+
+    enum StickerState {
+        placing
+        editing
+        locked
+    }
+
+    class ARSticker {
+        +String id
+        +StickerType type
+        +String content
+        +Vector3 position
+        +Vector3 rotation
+        +Vector3 scale
+        +String? anchorId
+        +DateTime createdAt
+        +Map<String, dynamic> properties
+        +StickerState state
+        +ARSticker copyWith(...)
+        +Map<String, dynamic> toJson()
+        +{static} ARSticker fromJson(Map<String, dynamic>)
+    }
+
+    class ARStickerTemplate {
+        +String id
+        +String name
+        +StickerType type
+        +String content
+        +String? previewAsset
+        +Map<String, dynamic> defaultProperties
+    }
+
+    class StickerTemplates {
+        +{static} List<ARStickerTemplate> emojis
+        +{static} List<ARStickerTemplate> shapes
+        +{static} List<ARStickerTemplate> get all
+    }
+
+    class Community {
+        +String id
+        +String name
+        +String description
+        +String imageUrl
+        +int memberCount
+        +bool isJoined
+        +List<String> tags
+    }
+
+    class CommunityPost {
+        +String id
+        +String communityId
+        +String communityName
+        +String authorId
+        +String authorName
+        +String authorAvatar
+        +String imageUrl
+        +String caption
+        +int likes
+        +int comments
+        +bool isLiked
+        +bool isSaved
+        +DateTime createdAt
+    }
+}
+
+' Domain Models Package
+package "domain.models" {
+    enum CommunityVisibility {
+        public
+        private
+    }
+
+    class Community {
+        +String id
+        +String name
+        +String photoUrl
+        +String handle
+        +String description
+        +String createdBy
+        +String bannerUrl
+        +DateTime createdAt
+        +DateTime updatedAt
+        +List<String> rules
+        +List<String> tags
+        +CommunityStats stats
+        +CommunityVisibility visibility
+    }
+
+    class CommunityStats {
+        +int graffinitiCount
+        +int memberCount
+        +int postCount
+    }
+}
+
+' Data Models Package
+package "data.models" {
+    class CommunityApiModel {
+        +String id
+        +String name
+        +String photoUrl
+        +String handle
+        +String description
+        +String createdBy
+        +String bannerUrl
+        +Timestamp createdAt
+        +Timestamp updatedAt
+        +List<String> rules
+        +List<String> tags
+        +Map<String, dynamic> stats
+        +String visibility
+        +{static} CommunityApiModel fromFirestore(DocumentSnapshot)
+        +Map<String, dynamic> toMap()
+        +Community toDomain()
+    }
+}
+
+' Data Services Package
+package "data.services" {
+    class FirestoreService {
+        -FirebaseFirestore _firestore
+        +Future<String> createDocument(String, Map<String, dynamic>)
+        +Stream<DocumentSnapshot> getDocument(String, String)
+        +Stream<QuerySnapshot> getCollection(String)
+        +Future<void> updateDocument(String, String, Map<String, dynamic>)
+        +Future<void> deleteDocument(String, String)
+        +Future<List<DocumentSnapshot>> queryWhere(String, String, dynamic)
+    }
+}
+
+' Data Repositories Package
+package "data.repositories" {
+    class CommunityRepository {
+        -FirestoreService _firestoreService
+        +Stream<List<Community>> watchPublicCommunities()
+        +Future<Community?> getCommunityById(String)
+        +Future<String> createCommunity(...)
+        +Future<void> updateCommunity(String, Map<String, dynamic>)
+        +Future<void> deleteCommunity(String)
+        +Future<void> joinCommunity(String, String)
+        +Future<void> leaveCommunity(String, String)
+        +Future<bool> isUserMember(String, String)
+        +Stream<List<Community>> watchUserCommunities(String)
+    }
+}
+
+' UI ViewModels Package
+package "ui.viewmodels" {
+    class CommunityViewModel {
+        -CommunityRepository _repository
+        -List<Community> _communities
+        -bool _loading
+        -String? _error
+        +List<Community> get communities
+        +bool get loading
+        +String? get error
+        +void loadCommunities()
+        +Future<void> createCommunity(...)
+        +Future<void> joinCommunity(String, String)
+        +Future<void> leaveCommunity(String, String)
+        +Future<void> updateCommunity(...)
+        +Future<void> deleteCommunity(String)
+        +void clearError()
+    }
+
+    class ARStickerViewModel {
+        -List<ARSticker> _stickers
+        -bool _isLoading
+        +List<ARSticker> get stickers
+        +bool get isLoading
+        +void addSticker(ARSticker)
+        +void removeSticker(String)
+        +void updateSticker(String, ARSticker)
+    }
+}
+
+' Pages Package
+package "pages" {
+    class LoginPage {
+        +Widget build(BuildContext)
+        -Future<void> _signIn()
+        -void _showErrorDialog(String)
+    }
+
+    class SignupPage {
+        +Widget build(BuildContext)
+        -Future<void> _signUp()
+        -void _showErrorDialog(String)
+    }
+
+    class HomePage {
+        +Widget build(BuildContext)
+    }
+
+    class DiscoverPage {
+        +Widget build(BuildContext)
+        -Widget _buildPostCard(CommunityPost)
+    }
+
+    class CameraPage {
+        -CameraController? _cameraController
+        +void initState()
+        +void dispose()
+        +Widget build(BuildContext)
+        -Future<void> _initializeCamera()
+        -Future<void> _takePicture()
+    }
+
+    class CommunitiesPage {
+        +Widget build(BuildContext)
+    }
+
+    class SimpleProfilePage {
+        +Widget build(BuildContext)
+        -Widget _buildProfileHeader()
+        -Widget _buildStatsRow()
+        -Widget _buildGraffitiGrid()
+    }
+
+    class EditProfilePage {
+        -GlobalKey<FormState> _formKey
+        -TextEditingController _nameController
+        -TextEditingController _bioController
+        -TextEditingController _locationController
+        -TextEditingController _websiteController
+        -UserService _userService
+        -FirebaseAuth _auth
+        -bool _isLoading
+        -bool _isLoadingData
+        -bool _isUploadingImage
+        -Map<String, dynamic> _userData
+        -File? _selectedImage
+        -File? _selectedBannerImage
+        -ImagePicker _imagePicker
+        +void initState()
+        +void dispose()
+        +Widget build(BuildContext)
+        -Future<void> _loadUserData()
+        -Widget _buildHeader()
+        -Widget _buildBannerImage()
+        -Widget _buildProfilePicture()
+        -Widget _buildTextField(...)
+        -Widget _buildSaveButton()
+        -void _showImagePickerDialog()
+        -void _showBannerImagePickerDialog()
+        -Widget _buildImageOption(...)
+        -Future<void> _pickImage(ImageSource)
+        -Future<void> _pickBannerImage(ImageSource)
+        -void _removeImage()
+        -void _removeBannerImage()
+        -Future<void> _saveProfile()
+    }
+
+    class SearchPage {
+        +Widget build(BuildContext)
+    }
+
+    class SettingsPage {
+        +Widget build(BuildContext)
+    }
+
+    class ARGraffitiPage {
+        +Widget build(BuildContext)
+    }
+
+    class ARSpherePage {
+        +Widget build(BuildContext)
+    }
+
+    class ARDemoLauncher {
+        +Widget build(BuildContext)
+    }
+}
+
+' UI Widgets Package
+package "ui.widgets" {
+    class ARStickersScreen {
+        +Widget build(BuildContext)
+    }
+
+    class ARControlsOverlay {
+        +ARStickerManager manager
+        +Widget build(BuildContext)
+    }
+
+    class ARStickerPanel {
+        +Function(ARStickerTemplate) onStickerSelected
+        +Widget build(BuildContext)
+        -Widget _buildStickerGrid()
+    }
+
+    class CommunitiesScreen {
+        +Widget build(BuildContext)
+    }
+
+    class CommunityCard {
+        +Community community
+        +VoidCallback? onTap
+        +Widget build(BuildContext)
+    }
+
+    class CommunityDetailScreen {
+        +Community community
+        +Widget build(BuildContext)
+    }
+
+    class CommunityFormWidgets {
+        +{static} Widget buildNameField(TextEditingController)
+        +{static} Widget buildDescriptionField(TextEditingController)
+        +{static} Widget buildTagsField(List<String>, Function)
+    }
+
+    class CreateCommunityScreen {
+        +Widget build(BuildContext)
+    }
+
+    class EditCommunityScreen {
+        +Community community
+        +Widget build(BuildContext)
+    }
+
+    class CommunityPostCard {
+        +CommunityPost post
+        +Widget build(BuildContext)
+    }
+}
+
+' Relationships
+MyApp --> MainNavigation
+MyApp --> Dependencies : uses
+MainNavigation --> AuthWrapper
+MainNavigation --> DiscoverPage
+MainNavigation --> CameraPage
+MainNavigation --> CommunitiesScreen
+MainNavigation --> SimpleProfilePage
+
+ARStickerManager --> ARService
+ARStickerManager --> ARSticker
+ARStickerManager --> ARStickerTemplate
+ARStickerManager --> ARMode
+
+ARProductionService --|> ARService
+ARMockService --|> ARService
+
+UserService --> CloudinaryService : uses
+
+CommunityViewModel --> CommunityRepository
+CommunityRepository --> FirestoreService
+
+ARSticker --> StickerType
+ARSticker --> StickerState
+ARStickerTemplate --> StickerType
+
+Community --> CommunityStats
+Community --> CommunityVisibility
+CommunityApiModel --> Community : converts to
+
+EditProfilePage --> UserService
+EditProfilePage --> AuthService
+
+ARStickersScreen --> ARStickerManager
+ARControlsOverlay --> ARStickerManager
+ARStickerPanel --> ARStickerTemplate
+
+CommunitiesScreen --> CommunityViewModel
+CommunityCard --> Community
+CommunityDetailScreen --> Community
+CommunityPostCard --> CommunityPost
+
+@enduml'''
+
+    return plantuml_code
+
+def save_diagram_to_file(plantuml_code, filename="graffiniti_class_diagram.puml"):
+    """Save the PlantUML code to a file"""
+    try:
+        with open(filename, 'w', encoding='utf-8') as file:
+            file.write(plantuml_code)
+        print(f"Class diagram saved to {filename}")
+        print("\nTo generate the diagram image:")
+        print("1. Install PlantUML: https://plantuml.com/starting")
+        print("2. Run: java -jar plantuml.jar graffiniti_class_diagram.puml")
+        print("3. Or use online PlantUML editor: https://www.plantuml.com/plantuml/uml/")
+    except Exception as e:
+        print(f"Error saving file: {e}")
+
+def generate_html_documentation():
+    """Generate HTML documentation with the class diagram"""
+    html_content = '''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graffiniti App - Class Diagram</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #FF6B35;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #333;
+            border-bottom: 2px solid #FF6B35;
+            padding-bottom: 10px;
+        }
+        .architecture-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .package-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .package {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        .package h3 {
+            color: #FF6B35;
+            margin-top: 0;
+        }
+        .class-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        .class-list li {
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        code {
+            background: #f1f1f1;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+        .plantuml-code {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Graffiniti Flutter App - Class Diagram</h1>
+
+        <div class="architecture-info">
+            <h2>📋 Application Architecture Overview</h2>
+            <p><strong>Graffiniti</strong> is an AR-based graffiti social platform built with Flutter, implementing a clean architecture pattern with the following key layers:</p>
+            <ul>
+                <li><strong>Presentation Layer:</strong> Pages, Widgets, and ViewModels</li>
+                <li><strong>Domain Layer:</strong> Business models and entities</li>
+                <li><strong>Data Layer:</strong> Repositories, services, and API models</li>
+                <li><strong>Core Layer:</strong> Shared services, utilities, and themes</li>
+            </ul>
+        </div>
+
+        <h2>📦 Package Structure</h2>
+        <div class="package-list">
+            <div class="package">
+                <h3>🔧 Core Services</h3>
+                <ul class="class-list">
+                    <li><code>ARService</code> - AR functionality abstraction</li>
+                    <li><code>UserService</code> - User management with Cloudinary</li>
+                    <li><code>AuthService</code> - Authentication handling</li>
+                    <li><code>CloudinaryService</code> - Image upload service</li>
+                    <li><code>MediaService</code> - Media handling utilities</li>
+                </ul>
+            </div>
+
+            <div class="package">
+                <h3>🎯 AR Components</h3>
+                <ul class="class-list">
+                    <li><code>ARStickerManager</code> - AR sticker state management</li>
+                    <li><code>ARSticker</code> - AR sticker model</li>
+                    <li><code>ARStickerTemplate</code> - Sticker templates</li>
+                    <li><code>StickerTemplates</code> - Predefined sticker sets</li>
+                </ul>
+            </div>
+
+            <div class="package">
+                <h3>👥 Community System</h3>
+                <ul class="class-list">
+                    <li><code>CommunityViewModel</code> - Community state management</li>
+                    <li><code>CommunityRepository</code> - Community data access</li>
+                    <li><code>Community</code> - Community domain model</li>
+                    <li><code>CommunityApiModel</code> - API data model</li>
+                </ul>
+            </div>
+
+            <div class="package">
+                <h3>📱 UI Components</h3>
+                <ul class="class-list">
+                    <li><code>EditProfilePage</code> - Profile editing with Cloudinary</li>
+                    <li><code>ARStickersScreen</code> - AR sticker interface</li>
+                    <li><code>CommunityCard</code> - Community display widget</li>
+                    <li><code>CustomBottomNavigation</code> - Navigation component</li>
+                </ul>
+            </div>
+
+            <div class="package">
+                <h3>🛠️ Utilities</h3>
+                <ul class="class-list">
+                    <li><code>AppTheme</code> - Application theming</li>
+                    <li><code>PermissionHelper</code> - Permission management</li>
+                    <li><code>ToastHelper</code> - User notifications</li>
+                    <li><code>Dependencies</code> - Dependency injection</li>
+                </ul>
+            </div>
+
+            <div class="package">
+                <h3>🗄️ Data Management</h3>
+                <ul class="class-list">
+                    <li><code>FirestoreService</code> - Firebase Firestore operations</li>
+                    <li><code>CommunityRepository</code> - Community data access layer</li>
+                    <li><code>UserService</code> - User data with Cloudinary integration</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2>🔄 Key Integrations</h2>
+        <div class="architecture-info">
+            <ul>
+                <li><strong>Cloudinary:</strong> Image upload and optimization for profile pictures and banners</li>
+                <li><strong>Firebase:</strong> Authentication, Firestore database, and user management</li>
+                <li><strong>AR Core:</strong> Augmented reality sticker placement and management</li>
+                <li><strong>Provider Pattern:</strong> State management using ChangeNotifier</li>
+                <li><strong>Repository Pattern:</strong> Data access abstraction layer</li>
+            </ul>
+        </div>
+
+        <h2>📋 PlantUML Source Code</h2>
+        <p>Copy the code below and paste it into <a href="https://www.plantuml.com/plantuml/uml/" target="_blank">PlantUML Online Editor</a> to generate the visual diagram:</p>
+
+        <div class="plantuml-code">
+            <pre><code>''' + generate_class_diagram() + '''</code></pre>
+        </div>
+
+        <h2>🚀 How to Use This Diagram</h2>
+        <div class="architecture-info">
+            <ol>
+                <li><strong>Copy the PlantUML code</strong> from the section above</li>
+                <li><strong>Visit</strong> <a href="https://www.plantuml.com/plantuml/uml/" target="_blank">PlantUML Online Editor</a></li>
+                <li><strong>Paste the code</strong> and click "Submit" to generate the visual diagram</li>
+                <li><strong>Download</strong> the diagram in PNG, SVG, or other formats</li>
+                <li><strong>Use for documentation</strong>, presentations, or development reference</li>
+            </ol>
+        </div>
+    </div>
+</body>
+</html>'''
+
+    return html_content
+
+if __name__ == "__main__":
+    print("🎨 Graffiniti Flutter App - Class Diagram Generator")
+    print("=" * 60)
+
+    # Generate PlantUML code
+    plantuml_code = generate_class_diagram()
+
+    # Save to .puml file
+    save_diagram_to_file(plantuml_code)
+
+    # Generate HTML documentation
+    html_content = generate_html_documentation()
+    with open("graffiniti_class_diagram.html", 'w', encoding='utf-8') as html_file:
+        html_file.write(html_content)
+    print("HTML documentation saved to graffiniti_class_diagram.html")
+
+    print("\n📊 Class Diagram Statistics:")
+    print(f"- Total classes identified: ~50+")
+    print(f"- Main packages: 10")
+    print(f"- Key services: 6")
+    print(f"- UI components: 15+")
+    print(f"- Models: 8")
+
+    print("\n✅ Files generated successfully!")
+    print("📁 graffiniti_class_diagram.puml - PlantUML source")
+    print("🌐 graffiniti_class_diagram.html - Interactive documentation")

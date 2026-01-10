@@ -1,12 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:dio/dio.dart';
 import 'dart:io';
+import 'dart:typed_data';
 
 class UserService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseStorage _storage = FirebaseStorage.instance;
+  final Dio _dio = Dio();
+
+  // Cloudinary configuration
+  static const String _cloudName = 'dntncz9no';
+  static const String _uploadPreset = 'unsigned_preset';
+  static const String _baseUrl = 'https://api.cloudinary.com/v1_1/$_cloudName';
 
   // Get current user ID
   String? get currentUserId => _auth.currentUser?.uid;
@@ -59,6 +65,7 @@ class UserService {
     String? location,
     String? website,
     String? profileImageUrl,
+    String? bannerImageUrl,
   }) async {
     try {
       Map<String, dynamic> updateData = {
@@ -71,6 +78,9 @@ class UserService {
       if (website != null) updateData['website'] = website;
       if (profileImageUrl != null) {
         updateData['profileImageUrl'] = profileImageUrl;
+      }
+      if (bannerImageUrl != null) {
+        updateData['bannerImageUrl'] = bannerImageUrl;
       }
 
       // Use set with merge to create document if it doesn't exist
@@ -134,6 +144,7 @@ class UserService {
         'location': '',
         'website': '',
         'profileImageUrl': '',
+        'bannerImageUrl': '',
         'graffitiCount': 0,
         'followersCount': 0,
         'followingCount': 0,
@@ -207,39 +218,13 @@ class UserService {
         .map((doc) => doc.exists);
   }
 
-  // Upload profile image to Firebase Storage
+  // Upload profile image to Cloudinary
   Future<String> uploadProfileImage(String userId, File imageFile) async {
     try {
-      // Create a reference to the profile images folder
-      Reference ref = _storage
-          .ref()
-          .child('profile_images')
-          .child('$userId.jpg');
-
-      // Upload the file
-      UploadTask uploadTask = ref.putFile(imageFile);
-      TaskSnapshot snapshot = await uploadTask;
-
-      // Get the download URL
-      String downloadUrl = await snapshot.ref.getDownloadURL();
-      return downloadUrl;
+      final fileName = 'profile_${userId}_${DateTime.now().millisecondsSinceEpoch}';
+      return await _uploadImageToCloudinary(imageFile, fileName, 'profile_images');
     } catch (e) {
-      throw Exception('Failed to upload image: ${e.toString()}');
-    }
-  }
-
-  // Delete profile image from Firebase Storage
-  Future<void> deleteProfileImage(String userId) async {
-    try {
-      Reference ref = _storage
-          .ref()
-          .child('profile_images')
-          .child('$userId.jpg');
-
-      await ref.delete();
-    } catch (e) {
-      // Image might not exist, which is fine
-      print('Error deleting profile image: $e');
+      throw Exception('Failed to upload profile image: ${e.toString()}');
     }
   }
 
@@ -249,11 +234,10 @@ class UserService {
       String? imageUrl;
 
       if (imageFile != null) {
-        // Upload new image
+        // Upload new image to Cloudinary
         imageUrl = await uploadProfileImage(userId, imageFile);
       } else {
         // Remove image
-        await deleteProfileImage(userId);
         imageUrl = '';
       }
 
@@ -266,6 +250,95 @@ class UserService {
       return imageUrl;
     } catch (e) {
       throw Exception('Failed to update profile image: ${e.toString()}');
+    }
+  }
+
+  // Upload banner image to Cloudinary
+  Future<String> uploadBannerImage(String userId, File imageFile) async {
+    try {
+      final fileName = 'banner_${userId}_${DateTime.now().millisecondsSinceEpoch}';
+      return await _uploadImageToCloudinary(imageFile, fileName, 'banner_images');
+    } catch (e) {
+      throw Exception('Failed to upload banner image: ${e.toString()}');
+    }
+  }
+
+  // Update banner image
+  Future<String?> updateBannerImage(String userId, File? imageFile) async {
+    try {
+      String? imageUrl;
+
+      if (imageFile != null) {
+        // Upload new image to Cloudinary
+        imageUrl = await uploadBannerImage(userId, imageFile);
+      } else {
+        // Remove image
+        imageUrl = '';
+      }
+
+      // Update user document with just the banner image URL
+      await _firestore.collection('users').doc(userId).update({
+        'bannerImageUrl': imageUrl,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      return imageUrl;
+    } catch (e) {
+      throw Exception('Failed to update banner image: ${e.toString()}');
+    }
+  }
+
+  // Generic method to upload image to Cloudinary
+  Future<String> _uploadImageToCloudinary(File imageFile, String fileName, String folder) async {
+    try {
+      // Read image file as bytes
+      final Uint8List imageBytes = await imageFile.readAsBytes();
+
+      // Create form data
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(
+          imageBytes,
+          filename: '$fileName.jpg',
+        ),
+        'upload_preset': _uploadPreset,
+        'folder': folder,
+        'public_id': fileName,
+        'resource_type': 'image',
+        'format': 'jpg',
+      });
+
+      // Upload to Cloudinary
+      final response = await _dio.post(
+        '$_baseUrl/image/upload',
+        data: formData,
+        options: Options(
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          receiveTimeout: const Duration(seconds: 30),
+          sendTimeout: const Duration(seconds: 30),
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+        return responseData['secure_url'] as String;
+      } else {
+        throw Exception('Upload failed with status: ${response.statusCode}');
+      }
+    } catch (e) {
+      if (e is DioException) {
+        if (e.type == DioExceptionType.connectionTimeout ||
+            e.type == DioExceptionType.receiveTimeout ||
+            e.type == DioExceptionType.sendTimeout) {
+          throw Exception('Upload timeout. Please check your internet connection.');
+        } else if (e.type == DioExceptionType.connectionError) {
+          throw Exception('Connection error. Please check your internet connection.');
+        } else {
+          throw Exception('Upload failed: ${e.message}');
+        }
+      }
+      throw Exception('Upload failed: ${e.toString()}');
     }
   }
 }

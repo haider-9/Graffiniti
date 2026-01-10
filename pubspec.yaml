@@ -2,7 +2,7 @@ name: griffiniti
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
@@ -36,7 +36,7 @@ dependencies:
   camera: ^0.10.5+9
   path_provider: ^2.1.1
   path: ^1.8.3
-  
+
   # AR and graphics
   arcore_flutter_plugin:
     git:
@@ -44,27 +44,32 @@ dependencies:
       ref: master
   flutter_svg: ^2.0.9
   vector_math: ^2.1.4
-  
+
   # UI enhancements
   flutter_staggered_animations: ^1.1.1
   shimmer: ^3.0.0
-  
+
   # Utilities
   permission_handler: ^12.0.1
   geolocator: ^9.0.2
   share_plus: ^7.2.1
-  
+
   # Firebase
   firebase_core: ^3.6.0
   firebase_auth: ^5.3.1
   cloud_firestore: ^5.4.3
   firebase_storage: ^12.3.2
-  
+
   # Image handling
   image_picker: ^1.0.4
   gal: ^2.3.0
   image: ^4.1.7
   provider: ^6.1.5+1
+
+  # Cloudinary and HTTP
+  http: ^1.1.0
+  dio: ^5.3.2
+  crypto: ^3.0.3
 
 dev_dependencies:
   flutter_test:
@@ -83,7 +88,6 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
-
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.

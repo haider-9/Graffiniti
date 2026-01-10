@@ -9,6 +9,7 @@ import '../main.dart';
 import '../core/theme/app_theme.dart';
 import '../core/utils/permission_helper.dart';
 import '../core/services/media_service.dart';
+import '../core/services/share_service.dart';
 import 'ar_graffiti_page.dart';
 import 'ar_demo_launcher.dart';
 
@@ -1403,8 +1404,11 @@ class _PreviewPageState extends State<PreviewPage> {
                 _buildActionButton(
                   icon: Icons.share,
                   label: 'Share',
-                  onTap: () {
-                    // TODO: Implement share functionality
+                  onTap: () async {
+                    await ShareService.shareMediaFile(
+                      filePath: widget.mediaPath,
+                      caption: 'Check out my AR graffiti creation!',
+                    );
                   },
                 ),
                 _buildActionButton(

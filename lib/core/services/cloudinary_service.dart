@@ -65,8 +65,9 @@ class CloudinaryService {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
-          receiveTimeout: CloudinaryConfig.uploadTimeout,
-          sendTimeout: CloudinaryConfig.uploadTimeout,
+          receiveTimeout: const Duration(seconds: 60),
+          sendTimeout: const Duration(seconds: 60),
+          connectTimeout: const Duration(seconds: 30),
         ),
       );
 
@@ -210,8 +211,9 @@ class CloudinaryService {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
-          receiveTimeout: CloudinaryConfig.uploadTimeout,
-          sendTimeout: CloudinaryConfig.uploadTimeout,
+          receiveTimeout: const Duration(seconds: 60),
+          sendTimeout: const Duration(seconds: 60),
+          connectTimeout: const Duration(seconds: 30),
         ),
       );
 

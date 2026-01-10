@@ -7,6 +7,7 @@ import '../core/widgets/logout_dialog.dart';
 import '../core/utils/toast_helper.dart';
 import '../core/services/auth_service.dart';
 import '../core/services/user_service.dart';
+import '../core/services/share_service.dart';
 import 'settings_page.dart';
 import 'edit_profile_page.dart';
 
@@ -154,9 +155,9 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
       ),
       actions: [
         GlassmorphicContainer(
-          width: 140,
-          height: 36,
-          borderRadius: BorderRadius.circular(18),
+          width: 100,
+          height: 32,
+          borderRadius: BorderRadius.circular(16),
           backgroundColor: Colors.white.withValues(alpha: 0.1),
           child: GestureDetector(
             onTap: () {
@@ -173,14 +174,14 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
                 Icon(
                   Icons.edit_outlined,
                   color: Colors.white.withValues(alpha: 0.8),
-                  size: 16,
+                  size: 14,
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 4),
                 Text(
-                  'Edit background',
+                  'Edit',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.8),
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -189,11 +190,27 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
           ),
         ),
         const SizedBox(width: 8),
-        IconButton(
-          icon: const Icon(Icons.share_outlined, color: Colors.white),
-          onPressed: () {
-            // Share profile functionality
+        GestureDetector(
+          onTap: () async {
+            await ShareService.shareProfile(
+              displayName: displayName,
+              userId: userId,
+              bio: bio != 'Click here to fill in the profile' ? bio : null,
+              profileImageUrl: profileImageUrl,
+            );
           },
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Icon(
+              Icons.share_outlined,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
         ),
         IconButton(
           icon: const Icon(Icons.more_vert, color: Colors.white),
@@ -304,20 +321,24 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
                               bottom: 0,
                               right: 0,
                               child: Container(
-                                width: 24,
-                                height: 24,
+                                width: 20,
+                                height: 20,
                                 decoration: BoxDecoration(
                                   color: AppTheme.accentOrange,
                                   shape: BoxShape.circle,
+<<<<<<< HEAD
                                   border: Border.all(
                                     color: Colors.white,
                                     width: 2,
                                   ),
+=======
+                                  border: Border.all(color: Colors.white, width: 1.5),
+>>>>>>> 9b71c29529e766ca6f72b888d8a22745b4162683
                                 ),
                                 child: const Icon(
                                   Icons.edit,
                                   color: Colors.white,
-                                  size: 12,
+                                  size: 10,
                                 ),
                               ),
                             ),
@@ -558,11 +579,17 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
                         // Navigate to Community
                         ToastHelper.info(context, 'Opening Community...');
                       },
-                      child: _buildActionCard(
-                        'Community',
-                        'Connect & share',
-                        Icons.groups_outlined,
-                        AppTheme.accentGreen,
+                      child: GestureDetector(
+                        onTap: () {
+                          // Navigate to communities page
+                          DefaultTabController.of(context)?.animateTo(2);
+                        },
+                        child: _buildActionCard(
+                          'Community',
+                          'Connect & share',
+                          Icons.groups_outlined,
+                          AppTheme.accentGreen,
+                        ),
                       ),
                     ),
                   ),
@@ -712,8 +739,13 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
                     _tabIndex == 0
                         ? Icons.view_in_ar_outlined
                         : _tabIndex == 1
+<<<<<<< HEAD
                         ? Icons.bookmark_outline
                         : Icons.favorite_outline,
+=======
+                            ? Icons.bookmark_outline
+                            : Icons.favorite_outline,
+>>>>>>> 9b71c29529e766ca6f72b888d8a22745b4162683
                     color: Colors.white.withValues(alpha: 0.4),
                     size: 48,
                   ),

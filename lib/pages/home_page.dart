@@ -163,7 +163,10 @@ class _HomePageState extends State<HomePage> {
                           icon: Icons.group_outlined,
                           title: 'Community',
                           subtitle: 'Share & discover',
-                          onTap: () {},
+                          onTap: () {
+                            // Navigate to communities tab (index 2)
+                            DefaultTabController.of(context)?.animateTo(2);
+                          },
                         ),
                       ],
                     ),

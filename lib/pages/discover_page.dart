@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../core/theme/app_theme.dart';
+import '../core/utils/debouncer.dart';
 import '../core/widgets/glassmorphic_container.dart';
 
 class DiscoverPage extends StatefulWidget {
@@ -13,41 +15,15 @@ class _DiscoverPageState extends State<DiscoverPage>
     with TickerProviderStateMixin {
   late TabController _tabController;
   late AnimationController _animationController;
+  final TextEditingController _searchController = TextEditingController();
+  final Debouncer _searchDebouncer = Debouncer(milliseconds: 500);
 
   final List<String> _tabs = ['Nearby', 'Trending', 'Following'];
-
-  final List<Map<String, dynamic>> _nearbyGraffiti = [
-    {
-      'id': '1',
-      'title': 'Urban Flow',
-      'artist': '@streetartist',
-      'location': 'Downtown Plaza',
-      'distance': '50m',
-      'likes': 234,
-      'time': '2h ago',
-      'color': AppTheme.accentOrange,
-    },
-    {
-      'id': '2',
-      'title': 'City Pulse',
-      'artist': '@graffitiking',
-      'location': 'Main Street',
-      'distance': '120m',
-      'likes': 189,
-      'time': '4h ago',
-      'color': AppTheme.accentBlue,
-    },
-    {
-      'id': '3',
-      'title': 'Street Canvas',
-      'artist': '@urbanartist',
-      'location': 'Art District',
-      'distance': '200m',
-      'likes': 456,
-      'time': '6h ago',
-      'color': AppTheme.accentGreen,
-    },
-  ];
+  String _searchQuery = '';
+  bool _showSearchBar = false;
+  List<Map<String, dynamic>> _searchResults = [];
+  List<Map<String, dynamic>> _nearbyGraffiti = [];
+  bool _isSearching = false;
 
   @override
   void initState() {
@@ -58,13 +34,157 @@ class _DiscoverPageState extends State<DiscoverPage>
       vsync: this,
     );
     _animationController.forward();
+    _searchController.addListener(_onSearchChanged);
+    _loadNearbyGraffiti();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     _animationController.dispose();
+    _searchController.dispose();
+    _searchDebouncer.dispose();
     super.dispose();
+  }
+
+  void _loadNearbyGraffiti() {
+    // Mock data for now - replace with actual Firebase query
+    setState(() {
+      _nearbyGraffiti = [
+        {
+          'id': '1',
+          'title': 'Urban Flow',
+          'artist': '@streetartist',
+          'location': 'Downtown Plaza',
+          'distance': '50m',
+          'likes': 234,
+          'time': '2h ago',
+          'color': AppTheme.accentOrange,
+        },
+        {
+          'id': '2',
+          'title': 'City Pulse',
+          'artist': '@graffitiking',
+          'location': 'Main Street',
+          'distance': '120m',
+          'likes': 189,
+          'time': '4h ago',
+          'color': AppTheme.accentBlue,
+        },
+        {
+          'id': '3',
+          'title': 'Street Canvas',
+          'artist': '@urbanartist',
+          'location': 'Art District',
+          'distance': '200m',
+          'likes': 456,
+          'time': '6h ago',
+          'color': AppTheme.accentGreen,
+        },
+      ];
+    });
+  }
+
+  void _onSearchChanged() {
+    final query = _searchController.text;
+    setState(() {
+      _searchQuery = query;
+    });
+
+    if (query.isEmpty) {
+      setState(() {
+        _searchResults = [];
+        _isSearching = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isSearching = true;
+    });
+
+    _searchDebouncer.run(() {
+      _performFirebaseSearch(query);
+    });
+  }
+
+  void _performFirebaseSearch(String query) async {
+    try {
+      // Simplified Firebase search query without orderBy to avoid index requirement
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('graffiti')
+          .where('visibility', isEqualTo: 'public')
+          .limit(50) // Get more results to filter locally
+          .get();
+
+      // Filter results locally to avoid complex Firebase queries
+      final results = querySnapshot.docs
+          .map((doc) {
+            final data = doc.data();
+            return {
+              'id': doc.id,
+              'title': data['title'] ?? '',
+              'artist': data['artist'] ?? '',
+              'location': data['location'] ?? '',
+              'distance': data['distance'] ?? '0m',
+              'likes': data['likes'] ?? 0,
+              'time': data['time'] ?? 'now',
+              'color': AppTheme.accentOrange, // Default color
+            };
+          })
+          .where((graffiti) {
+            final title = graffiti['title'].toString().toLowerCase();
+            final artist = graffiti['artist'].toString().toLowerCase();
+            final location = graffiti['location'].toString().toLowerCase();
+            final searchLower = query.toLowerCase();
+
+            return title.contains(searchLower) ||
+                artist.contains(searchLower) ||
+                location.contains(searchLower);
+          })
+          .take(20) // Limit final results
+          .toList();
+
+      if (mounted) {
+        setState(() {
+          _searchResults = results;
+          _isSearching = false;
+        });
+      }
+    } catch (e) {
+      // Fallback to mock search for demo
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      final mockResults = _nearbyGraffiti.where((graffiti) {
+        final title = graffiti['title'].toString().toLowerCase();
+        final artist = graffiti['artist'].toString().toLowerCase();
+        final location = graffiti['location'].toString().toLowerCase();
+        final searchLower = query.toLowerCase();
+
+        return title.contains(searchLower) ||
+            artist.contains(searchLower) ||
+            location.contains(searchLower);
+      }).toList();
+
+      if (mounted) {
+        setState(() {
+          _searchResults = mockResults;
+          _isSearching = false;
+        });
+      }
+    }
+  }
+
+  void _toggleSearch() {
+    setState(() {
+      _showSearchBar = !_showSearchBar;
+      if (!_showSearchBar) {
+        _searchController.clear();
+        _searchQuery = '';
+        _searchResults = [];
+        _isSearching = false;
+      }
+    });
   }
 
   @override
@@ -77,16 +197,19 @@ class _DiscoverPageState extends State<DiscoverPage>
           child: Column(
             children: [
               _buildHeader(),
+              if (_showSearchBar) _buildSearchBar(),
               _buildTabBar(),
               Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildNearbyTab(),
-                    _buildTrendingTab(),
-                    _buildFollowingTab(),
-                  ],
-                ),
+                child: _showSearchBar && _searchQuery.isNotEmpty
+                    ? _buildSearchResults()
+                    : TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _buildNearbyTab(),
+                          _buildTrendingTab(),
+                          _buildFollowingTab(),
+                        ],
+                      ),
               ),
             ],
           ),
@@ -120,15 +243,13 @@ class _DiscoverPageState extends State<DiscoverPage>
           Row(
             children: [
               GestureDetector(
-                onTap: () {
-                  // Search functionality
-                },
+                onTap: _toggleSearch,
                 child: GlassmorphicContainer(
                   width: 44,
                   height: 44,
                   borderRadius: BorderRadius.circular(22),
-                  child: const Icon(
-                    Icons.search,
+                  child: Icon(
+                    _showSearchBar ? Icons.close : Icons.search,
                     color: Colors.white,
                     size: 20,
                   ),
@@ -162,6 +283,87 @@ class _DiscoverPageState extends State<DiscoverPage>
     );
   }
 
+  Widget _buildSearchBar() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppTheme.secondaryBlack,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+      ),
+      child: TextField(
+        controller: _searchController,
+        autofocus: true,
+        style: const TextStyle(color: Colors.white),
+        decoration: InputDecoration(
+          hintText: 'Search graffiti, artists, locations...',
+          hintStyle: const TextStyle(color: AppTheme.secondaryText),
+          prefixIcon: const Icon(Icons.search, color: AppTheme.secondaryText),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  onPressed: () {
+                    _searchController.clear();
+                  },
+                  icon: const Icon(Icons.clear, color: AppTheme.secondaryText),
+                )
+              : null,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchResults() {
+    if (_isSearching) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppTheme.accentOrange),
+      );
+    }
+
+    if (_searchQuery.isEmpty) {
+      return const Center(
+        child: Text(
+          'Start typing to search...',
+          style: TextStyle(color: AppTheme.secondaryText),
+        ),
+      );
+    }
+
+    if (_searchResults.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.search_off, size: 48, color: AppTheme.secondaryText),
+            SizedBox(height: 16),
+            Text(
+              'No graffiti found',
+              style: TextStyle(color: AppTheme.secondaryText, fontSize: 16),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Try different keywords',
+              style: TextStyle(color: AppTheme.mutedText, fontSize: 14),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(20),
+      itemCount: _searchResults.length,
+      itemBuilder: (context, index) {
+        final graffiti = _searchResults[index];
+        return _buildGraffitiCard(graffiti, index);
+      },
+    );
+  }
+
   Widget _buildTabBar() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -178,7 +380,11 @@ class _DiscoverPageState extends State<DiscoverPage>
         indicatorSize: TabBarIndicatorSize.tab,
         dividerColor: Colors.transparent,
         unselectedLabelColor: AppTheme.secondaryText,
-        labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
+        labelStyle: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+        ),
         tabs: _tabs.map((tab) => Tab(text: tab)).toList(),
       ),
     );
@@ -354,7 +560,7 @@ class _DiscoverPageState extends State<DiscoverPage>
 
                       Row(
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.location_on_outlined,
                             size: 16,
                             color: AppTheme.secondaryText,
@@ -376,7 +582,7 @@ class _DiscoverPageState extends State<DiscoverPage>
                         children: [
                           Row(
                             children: [
-                              Icon(
+                              const Icon(
                                 Icons.favorite_outline,
                                 size: 20,
                                 color: AppTheme.secondaryText,

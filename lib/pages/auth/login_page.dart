@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/toast_helper.dart';
+import '../../core/widgets/google_sign_in_button.dart';
+import '../../core/widgets/anonymous_sign_in_button.dart';
 import 'signup_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -18,6 +20,8 @@ class _LoginPageState extends State<LoginPage> {
   final AuthService _authService = AuthService();
 
   bool _isLoading = false;
+  bool _isGoogleLoading = false;
+  bool _isAnonymousLoading = false;
   bool _obscurePassword = true;
 
   @override
@@ -56,6 +60,81 @@ class _LoginPageState extends State<LoginPage> {
         setState(() {
           _isLoading = false;
         });
+      }
+    }
+  }
+
+  Future<void> _signInWithGoogle() async {
+    setState(() {
+      _isGoogleLoading = true;
+    });
+
+    try {
+      final result = await _authService.signInWithGoogle();
+      if (result != null && mounted) {
+        ToastHelper.success(context, 'Welcome to Graffiniti!');
+        // Navigation handled automatically by AuthWrapper
+      }
+    } catch (e) {
+      if (mounted) {
+        ToastHelper.authError(
+          context,
+          'Google sign-in failed. Please try again.',
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGoogleLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _signInAnonymously() async {
+    setState(() {
+      _isAnonymousLoading = true;
+    });
+
+    try {
+      final result = await _authService.signInAnonymously();
+      if (result != null && mounted) {
+        ToastHelper.success(
+          context,
+          'Welcome! You can upgrade your account later.',
+        );
+        // Navigation handled automatically by AuthWrapper
+      }
+    } catch (e) {
+      if (mounted) {
+        ToastHelper.authError(
+          context,
+          'Anonymous sign-in failed. Please try again.',
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isAnonymousLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _resetPassword() async {
+    if (_emailController.text.trim().isEmpty) {
+      ToastHelper.authError(context, 'Please enter your email address first');
+      return;
+    }
+
+    try {
+      await _authService.resetPassword(_emailController.text.trim());
+      if (mounted) {
+        ToastHelper.success(context, 'Password reset email sent!');
+      }
+    } catch (e) {
+      if (mounted) {
+        ToastHelper.authError(context, 'Failed to send reset email');
       }
     }
   }
@@ -106,7 +185,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 32),
 
                   // Email field
                   TextFormField(
@@ -223,9 +302,7 @@ class _LoginPageState extends State<LoginPage> {
 
                   // Forgot password
                   TextButton(
-                    onPressed: () {
-                      // TODO: Implement forgot password
-                    },
+                    onPressed: _resetPassword,
                     child: Text(
                       'Forgot Password?',
                       style: TextStyle(
@@ -233,6 +310,50 @@ class _LoginPageState extends State<LoginPage> {
                         fontSize: 14,
                       ),
                     ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Divider with "OR"
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Divider(
+                          color: Colors.white.withValues(alpha: 0.3),
+                          thickness: 1,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          'OR',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.7),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Divider(
+                          color: Colors.white.withValues(alpha: 0.3),
+                          thickness: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Google Sign-In Button
+                  GoogleSignInButton(
+                    onPressed: _signInWithGoogle,
+                    isLoading: _isGoogleLoading,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Anonymous Sign-In Button
+                  AnonymousSignInButton(
+                    onPressed: _signInAnonymously,
+                    isLoading: _isAnonymousLoading,
                   ),
                   const SizedBox(height: 32),
 

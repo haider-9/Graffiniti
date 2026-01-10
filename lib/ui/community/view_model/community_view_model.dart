@@ -1,19 +1,30 @@
 import 'package:flutter/foundation.dart';
+import 'dart:async';
 import '../../../domain/models/community.dart';
 import '../../../data/repositories/community_repository.dart';
+import '../../../core/utils/debouncer.dart';
 
 class CommunityViewModel extends ChangeNotifier {
   final CommunityRepository _repository;
+  final Debouncer _searchDebouncer = Debouncer(milliseconds: 500);
 
   CommunityViewModel(this._repository);
 
   List<Community> _communities = [];
+  List<Community> _searchResults = [];
   bool _loading = false;
+  bool _searching = false;
   String? _error;
+  String _searchQuery = '';
+  StreamSubscription<List<Community>>? _searchSubscription;
 
   List<Community> get communities => _communities;
+  List<Community> get searchResults => _searchResults;
   bool get loading => _loading;
+  bool get searching => _searching;
   String? get error => _error;
+  String get searchQuery => _searchQuery;
+  bool get hasSearchQuery => _searchQuery.isNotEmpty;
 
   void loadCommunities() {
     _repository.watchPublicCommunities().listen(
@@ -27,6 +38,61 @@ class CommunityViewModel extends ChangeNotifier {
         notifyListeners();
       },
     );
+  }
+
+  void searchCommunities(String query) {
+    _searchQuery = query;
+
+    if (query.trim().isEmpty) {
+      _clearSearch();
+      return;
+    }
+
+    _searching = true;
+    notifyListeners();
+
+    _searchDebouncer.run(() {
+      _performSearch(query.trim());
+    });
+  }
+
+  void _performSearch(String query) {
+    _searchSubscription?.cancel();
+
+    _searchSubscription = _repository
+        .searchCommunities(query)
+        .listen(
+          (results) {
+            _searchResults = results;
+            _searching = false;
+            _error = null;
+            notifyListeners();
+          },
+          onError: (error) {
+            _error = error.toString();
+            _searching = false;
+            notifyListeners();
+          },
+        );
+  }
+
+  void _clearSearch() {
+    _searchSubscription?.cancel();
+    _searchResults = [];
+    _searching = false;
+    _searchQuery = '';
+    notifyListeners();
+  }
+
+  void clearSearch() {
+    _clearSearch();
+  }
+
+  @override
+  void dispose() {
+    _searchDebouncer.dispose();
+    _searchSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> createCommunity({

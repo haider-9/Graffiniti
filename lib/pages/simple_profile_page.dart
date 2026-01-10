@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../core/theme/app_theme.dart';
 import '../core/widgets/glassmorphic_container.dart';
-import '../core/widgets/gradient_button.dart';
+import '../core/widgets/account_upgrade_dialog.dart';
+import '../core/widgets/logout_dialog.dart';
 import '../core/utils/toast_helper.dart';
 import '../core/services/auth_service.dart';
 import '../core/services/user_service.dart';
@@ -68,7 +68,10 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
           children: [
             ListTile(
               leading: const Icon(Icons.qr_code, color: Colors.white),
-              title: const Text('QR Code', style: TextStyle(color: Colors.white)),
+              title: const Text(
+                'QR Code',
+                style: TextStyle(color: Colors.white),
+              ),
               onTap: () {
                 Navigator.pop(context);
                 // Show QR code
@@ -76,7 +79,10 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
             ),
             ListTile(
               leading: const Icon(Icons.link, color: Colors.white),
-              title: const Text('Copy Profile Link', style: TextStyle(color: Colors.white)),
+              title: const Text(
+                'Copy Profile Link',
+                style: TextStyle(color: Colors.white),
+              ),
               onTap: () {
                 Navigator.pop(context);
                 // Copy profile link
@@ -84,10 +90,28 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
             ),
             ListTile(
               leading: const Icon(Icons.report_outlined, color: Colors.red),
-              title: const Text('Report Issue', style: TextStyle(color: Colors.red)),
+              title: const Text(
+                'Report Issue',
+                style: TextStyle(color: Colors.red),
+              ),
               onTap: () {
                 Navigator.pop(context);
                 // Report functionality
+              },
+            ),
+            const Divider(color: Colors.white12),
+            ListTile(
+              leading: const Icon(Icons.logout, color: Colors.red),
+              title: const Text(
+                'Sign Out',
+                style: TextStyle(color: Colors.red),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                showDialog(
+                  context: context,
+                  builder: (context) => const LogoutDialog(),
+                );
               },
             ),
           ],
@@ -102,18 +126,14 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
       backgroundColor: AppTheme.primaryBlack,
       body: _isLoading
           ? const Center(
-              child: CircularProgressIndicator(
-                color: AppTheme.accentOrange,
-              ),
+              child: CircularProgressIndicator(color: AppTheme.accentOrange),
             )
           : CustomScrollView(
-              slivers: [
-                _buildProfileHeader(),
-                _buildProfileContent(),
-              ],
+              slivers: [_buildProfileHeader(), _buildProfileContent()],
             ),
     );
   }
+
   Widget _buildProfileHeader() {
     final user = _currentUser;
     final displayName = _userData['displayName'] ?? user?.displayName ?? 'User';
@@ -259,15 +279,16 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
                                     ? Image.network(
                                         profileImageUrl,
                                         fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) =>
-                                            Container(
-                                          color: AppTheme.accentBlue,
-                                          child: const Icon(
-                                            Icons.person,
-                                            color: Colors.white,
-                                            size: 40,
-                                          ),
-                                        ),
+                                        errorBuilder:
+                                            (context, error, stackTrace) =>
+                                                Container(
+                                                  color: AppTheme.accentBlue,
+                                                  child: const Icon(
+                                                    Icons.person,
+                                                    color: Colors.white,
+                                                    size: 40,
+                                                  ),
+                                                ),
                                       )
                                     : Container(
                                         color: AppTheme.accentBlue,
@@ -288,7 +309,10 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
                                 decoration: BoxDecoration(
                                   color: AppTheme.accentOrange,
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white, width: 2),
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 2,
+                                  ),
                                 ),
                                 child: const Icon(
                                   Icons.edit,
@@ -314,6 +338,33 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
+                            if (_authService.isAnonymous) ...[
+                              const SizedBox(height: 4),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.accentOrange.withValues(
+                                    alpha: 0.2,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: AppTheme.accentOrange,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Text(
+                                  'Guest Account',
+                                  style: TextStyle(
+                                    color: AppTheme.accentOrange,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
                             const SizedBox(height: 4),
                             Text(
                               'Artist ID: $userId 🎨',
@@ -343,6 +394,7 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
       ),
     );
   }
+
   Widget _buildProfileContent() {
     return SliverToBoxAdapter(
       child: Container(
@@ -362,38 +414,79 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
                   _buildStatColumn('0', 'Likes&Views'),
                   const Spacer(),
                   // Action buttons
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const EditProfilePage(),
+                  if (_authService.isAnonymous) ...[
+                    GestureDetector(
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => const AccountUpgradeDialog(),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 8,
                         ),
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.2),
+                        decoration: BoxDecoration(
+                          gradient: AppTheme.primaryGradient,
+                          borderRadius: BorderRadius.circular(20),
                         ),
-                      ),
-                      child: const Text(
-                        'Edit Profile',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.upgrade,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 6),
+                            const Text(
+                              'Upgrade Account',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
+                    const SizedBox(width: 12),
+                  ] else ...[
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const EditProfilePage(),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.2),
+                          ),
+                        ),
+                        child: const Text(
+                          'Edit Profile',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                  ],
                   Container(
                     width: 40,
                     height: 40,
@@ -484,6 +577,7 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
       ),
     );
   }
+
   Widget _buildStatColumn(String count, String label) {
     return Column(
       children: [
@@ -518,9 +612,7 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
       decoration: BoxDecoration(
         color: AppTheme.secondaryBlack,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.1),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -562,6 +654,7 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
       ),
     );
   }
+
   Widget _buildContentTabs() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -573,7 +666,7 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
               final index = entry.key;
               final tab = entry.value;
               final isSelected = _tabIndex == index;
-              
+
               return Expanded(
                 child: GestureDetector(
                   onTap: () => setState(() => _tabIndex = index),
@@ -616,18 +709,18 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    _tabIndex == 0 
-                        ? Icons.view_in_ar_outlined 
-                        : _tabIndex == 1 
-                            ? Icons.bookmark_outline 
-                            : Icons.favorite_outline,
+                    _tabIndex == 0
+                        ? Icons.view_in_ar_outlined
+                        : _tabIndex == 1
+                        ? Icons.bookmark_outline
+                        : Icons.favorite_outline,
                     color: Colors.white.withValues(alpha: 0.4),
                     size: 48,
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    _tabIndex == 0 
-                        ? 'No AR graffiti created yet\nStart creating in AR Studio!' 
+                    _tabIndex == 0
+                        ? 'No AR graffiti created yet\nStart creating in AR Studio!'
                         : 'No ${_tabs[_tabIndex].toLowerCase()} items yet',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.6),

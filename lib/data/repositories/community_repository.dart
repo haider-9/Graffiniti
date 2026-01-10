@@ -136,4 +136,44 @@ class CommunityRepository {
       'updatedAt': Timestamp.now(),
     });
   }
+
+  Stream<List<Community>> searchCommunities(String searchTerm) {
+    if (searchTerm.trim().isEmpty) {
+      return watchPublicCommunities();
+    }
+
+    return _firestoreService
+        .searchCommunities(searchTerm.trim())
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => CommunityApiModel.fromFirestore(doc).toDomain())
+              .where((community) {
+                // Filter locally to avoid complex Firebase queries
+                final name = community.name.toLowerCase();
+                final description = community.description.toLowerCase();
+                final tags = community.tags.join(' ').toLowerCase();
+                final searchLower = searchTerm.toLowerCase();
+
+                return name.contains(searchLower) ||
+                    description.contains(searchLower) ||
+                    tags.contains(searchLower);
+              })
+              .take(20)
+              .toList(),
+        );
+  }
+
+  Stream<List<Community>> searchCommunitiesByTags(List<String> tags) {
+    if (tags.isEmpty) {
+      return watchPublicCommunities();
+    }
+
+    return _firestoreService
+        .searchCommunitiesByTags(tags)
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => CommunityApiModel.fromFirestore(doc).toDomain())
+              .toList(),
+        );
+  }
 }

@@ -44,4 +44,55 @@ class FirestoreService {
   Query queryCollection(String collection) {
     return _db.collection(collection);
   }
+
+  // Search methods with simplified queries to avoid index requirements
+  Stream<QuerySnapshot> searchCommunities(String searchTerm) {
+    if (searchTerm.isEmpty) {
+      return streamCollection('communities');
+    }
+
+    // Simple query without orderBy to avoid index requirement
+    return _db
+        .collection('communities')
+        .where('visibility', isEqualTo: 'public')
+        .limit(50)
+        .snapshots();
+  }
+
+  Stream<QuerySnapshot> searchCommunitiesByTags(List<String> tags) {
+    if (tags.isEmpty) {
+      return streamCollection('communities');
+    }
+
+    return _db
+        .collection('communities')
+        .where('visibility', isEqualTo: 'public')
+        .where('tags', arrayContainsAny: tags)
+        .snapshots();
+  }
+
+  Stream<QuerySnapshot> searchGraffiti(String searchTerm) {
+    if (searchTerm.isEmpty) {
+      return streamCollection('graffiti');
+    }
+
+    // Simple query without orderBy to avoid index requirement
+    return _db
+        .collection('graffiti')
+        .where('visibility', isEqualTo: 'public')
+        .limit(50)
+        .snapshots();
+  }
+
+  Stream<QuerySnapshot> searchGraffitiByTags(List<String> tags) {
+    if (tags.isEmpty) {
+      return streamCollection('graffiti');
+    }
+
+    return _db
+        .collection('graffiti')
+        .where('visibility', isEqualTo: 'public')
+        .where('tags', arrayContainsAny: tags)
+        .snapshots();
+  }
 }

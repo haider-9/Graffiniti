@@ -1,0 +1,463 @@
+@startuml Graffiniti_Class_Diagram
+
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam classBackgroundColor #F8F9FA
+skinparam classBorderColor #6C757D
+skinparam classArrowColor #495057
+skinparam classFontColor #212529
+skinparam classFontSize 10
+skinparam classAttributeFontSize 9
+skinparam classStereotypeFontSize 8
+
+' Main Application Layer
+package "Main Application" {
+    class MyApp {
+        +build(context): Widget
+    }
+    
+    class MainNavigation {
+        -_pageController: PageController
+        -_currentIndex: int
+        -_pages: List<Widget>
+        +initState(): void
+        +dispose(): void
+        +build(context): Widget
+    }
+}
+
+' Authentication Layer
+package "Authentication" {
+    class AuthService {
+        -_auth: FirebaseAuth
+        -_firestore: FirebaseFirestore
+        +currentUser: User?
+        +authStateChanges: Stream<User?>
+        +signUpWithEmailAndPassword(): Future<UserCredential?>
+        +signInWithEmailAndPassword(): Future<UserCredential?>
+        +signOut(): Future<void>
+        +resetPassword(email): Future<void>
+    }
+    
+    class AuthWrapper {
+        +build(context): Widget
+    }
+}
+
+' User Management Layer
+package "User Management" {
+    class UserService {
+        -_firestore: FirebaseFirestore
+        -_auth: FirebaseAuth
+        -_storage: FirebaseStorage
+        +currentUserId: String?
+        +getUserStream(userId): Stream<DocumentSnapshot>
+        +getUserData(userId): Future<Map<String, dynamic>?>
+        +updateUserProfile(): Future<void>
+        +updateUserStats(): Future<void>
+        +toggleFollow(targetUserId): Future<void>
+        +isFollowing(targetUserId): Stream<bool>
+        +uploadProfileImage(): Future<String>
+        +updateProfileImage(): Future<String?>
+    }
+}
+
+' AR System Layer
+package "AR System" {
+    enum StickerType {
+        emoji
+        text
+        image
+        shape
+    }
+    
+    enum StickerState {
+        placing
+        editing
+        locked
+    }
+    
+    enum ARMode {
+        viewing
+        placing
+        editing
+    }
+    
+    class ARSticker {
+        +id: String
+        +type: StickerType
+        +content: String
+        +position: Vector3
+        +rotation: Vector3
+        +scale: Vector3
+        +anchorId: String?
+        +createdAt: DateTime
+        +properties: Map<String, dynamic>
+        +state: StickerState
+        +copyWith(): ARSticker
+        +toJson(): Map<String, dynamic>
+        +fromJson(): ARSticker
+    }
+    
+    class ARStickerTemplate {
+        +id: String
+        +name: String
+        +type: StickerType
+        +content: String
+        +previewAsset: String?
+        +defaultProperties: Map<String, dynamic>
+    }
+    
+    class StickerTemplates {
+        +emojis: List<ARStickerTemplate>
+        +shapes: List<ARStickerTemplate>
+        +all: List<ARStickerTemplate>
+    }
+    
+    class ARService {
+        -_instance: ARService
+        -_arCoreController: ArCoreController?
+        -_stickers: Map<String, ARSticker>
+        -_nodes: Map<String, ArCoreNode>
+        -_stickersController: StreamController<List<ARSticker>>
+        -_trackingStateController: StreamController<bool>
+        -_isInitialized: bool
+        +isInitialized: bool
+        +stickers: List<ARSticker>
+        +stickersStream: Stream<List<ARSticker>>
+        +trackingStateStream: Stream<bool>
+        +initialize(controller): Future<bool>
+        +addSticker(sticker, position): Future<String?>
+        +updateStickerTransform(): Future<bool>
+        +removeSticker(stickerId): Future<bool>
+        +clearAllStickers(): Future<void>
+        +hitTestPlane(screenPosition): Vector3?
+        +exportStickers(): Future<List<Map<String, dynamic>>>
+        +importStickers(data): Future<void>
+        -_createNodeForSticker(): ArCoreNode?
+        -_createEmojiNode(): ArCoreNode
+        -_createTextNode(): ArCoreNode
+        -_createShapeNode(): ArCoreNode
+        -_createImageNode(): ArCoreNode
+    }
+    
+    class ARStickerManager {
+        -_arService: ARService
+        -_currentMode: ARMode
+        -_selectedSticker: ARSticker?
+        -_selectedTemplate: ARStickerTemplate?
+        -_editingStickerId: String?
+        -_isPlacementMode: bool
+        -_showPlanes: bool
+        -_isDragging: bool
+        -_isScaling: bool
+        -_isRotating: bool
+        +currentMode: ARMode
+        +selectedSticker: ARSticker?
+        +stickers: List<ARSticker>
+        +stickersStream: Stream<List<ARSticker>>
+        +setMode(mode): void
+        +enterPlacementMode(template): void
+        +exitPlacementMode(): void
+        +enterEditMode(stickerId): void
+        +exitEditMode(): void
+        +placeStickerAtScreenPosition(position): Future<bool>
+        +onTap(details): void
+        +onPanStart(details): void
+        +onPanUpdate(details): void
+        +onScaleStart(details): void
+        +onScaleUpdate(details): void
+        +deleteSticker(stickerId): Future<void>
+        +duplicateSticker(stickerId): Future<void>
+        +clearAllStickers(): Future<void>
+        +exportSession(): Future<Map<String, dynamic>>
+        +importSession(data): Future<void>
+    }
+    
+    class ARSphereService {
+        -_arCoreController: ArCoreController?
+        -_spheres: Map<String, ArCoreNode>
+        -_spheresController: StreamController<List<ArCoreNode>>
+        -_statusController: StreamController<String>
+        +spheresStream: Stream<List<ArCoreNode>>
+        +statusStream: Stream<String>
+        +initialize(controller): Future<bool>
+        +createSphereAtPosition(position): Future<String?>
+        +createCustomSphere(): Future<String?>
+        +removeSphere(sphereId): Future<bool>
+        +clearAllSpheres(): Future<void>
+    }
+}
+
+' Community System Layer
+package "Community System" {
+    enum CommunityVisibility {
+        public
+        private
+    }
+    
+    class Community {
+        +id: String
+        +name: String
+        +photoUrl: String
+        +handle: String
+        +description: String
+        +createdBy: String
+        +bannerUrl: String
+        +createdAt: DateTime
+        +updatedAt: DateTime
+        +rules: List<String>
+        +tags: List<String>
+        +stats: CommunityStats
+        +visibility: CommunityVisibility
+    }
+    
+    class CommunityStats {
+        +graffinitiCount: int
+        +memberCount: int
+        +postCount: int
+    }
+    
+    class CommunityApiModel {
+        +fromFirestore(doc): CommunityApiModel
+        +toMap(): Map<String, dynamic>
+        +toDomain(): Community
+    }
+    
+    class CommunityPost {
+        +id: String
+        +communityId: String
+        +communityName: String
+        +authorId: String
+        +authorName: String
+        +authorAvatar: String
+        +imageUrl: String
+        +caption: String
+        +likes: int
+        +comments: int
+        +isLiked: bool
+        +isSaved: bool
+        +createdAt: DateTime
+    }
+    
+    class CommunityRepository {
+        -_firestoreService: FirestoreService
+        +getCommunity(id): Future<Community>
+        +watchCommunities(): Stream<List<Community>>
+        +watchPublicCommunities(): Stream<List<Community>>
+        +createCommunity(): Future<Community>
+        +updateCommunity(id, updates): Future<void>
+        +deleteCommunity(id): Future<void>
+        +joinCommunity(communityId, userId): Future<void>
+        +leaveCommunity(communityId, userId): Future<void>
+    }
+    
+    class CommunityViewModel {
+        -_repository: CommunityRepository
+        -_communities: List<Community>
+        -_loading: bool
+        -_error: String?
+        +communities: List<Community>
+        +loading: bool
+        +error: String?
+        +loadCommunities(): void
+        +createCommunity(): Future<void>
+        +joinCommunity(communityId, userId): Future<void>
+        +leaveCommunity(communityId, userId): Future<void>
+        +updateCommunity(): Future<void>
+        +deleteCommunity(communityId): Future<void>
+        +clearError(): void
+    }
+}
+
+' Data Services Layer
+package "Data Services" {
+    class FirestoreService {
+        -_firestore: FirebaseFirestore
+        +getDocument(collection, id): Future<DocumentSnapshot>
+        +streamCollection(collection): Stream<QuerySnapshot>
+        +streamCollectionWhere(): Stream<QuerySnapshot>
+        +addDocument(collection, data): Future<DocumentReference>
+        +updateDocument(collection, id, data): Future<void>
+        +deleteDocument(collection, id): Future<void>
+    }
+    
+    class MediaService {
+        +saveImageToGallery(imagePath): Future<bool>
+        +deleteTempFile(filePath): Future<void>
+    }
+}
+
+' UI Pages Layer
+package "UI Pages" {
+    class CameraPage {
+        -_controller: CameraController?
+        -_aspectRatio: AspectRatio
+        -_isFlashOn: bool
+        -_isFrontCamera: bool
+        +initState(): void
+        +dispose(): void
+        +build(context): Widget
+        -_initializeCamera(): Future<void>
+        -_takePicture(): Future<void>
+        -_toggleFlash(): void
+        -_switchCamera(): void
+    }
+    
+    class ARGraffitiPage {
+        -_arCoreController: ArCoreController?
+        -_stickerManager: ARStickerManager
+        +initState(): void
+        +dispose(): void
+        +build(context): Widget
+        -_onArCoreViewCreated(controller): void
+        -_handleTap(details): void
+    }
+    
+    class ARSpherePageState {
+        -_arCoreController: ArCoreController?
+        -_sphereService: ARSphereService
+        +initState(): void
+        +dispose(): void
+        +build(context): Widget
+        -_onArCoreViewCreated(controller): void
+        -_addSphere(): void
+    }
+    
+    class DiscoverPage {
+        +build(context): Widget
+    }
+    
+    class SimpleProfilePage {
+        +build(context): Widget
+    }
+    
+    class CommunitiesScreen {
+        +build(context): Widget
+    }
+    
+    class PreviewPage {
+        +imagePath: String
+        +build(context): Widget
+        -_saveImage(): Future<void>
+    }
+}
+
+' UI Widgets Layer
+package "UI Widgets" {
+    class CustomBottomNavigation {
+        +currentIndex: int
+        +onTap: Function(int)
+        +build(context): Widget
+    }
+    
+    class GlassmorphicContainer {
+        +width: double?
+        +height: double?
+        +borderRadius: double
+        +backgroundColor: Color
+        +blur: double
+        +opacity: double
+        +border: Border?
+        +child: Widget?
+        +build(context): Widget
+    }
+    
+    class GradientButton {
+        +text: String
+        +onPressed: VoidCallback?
+        +gradient: Gradient
+        +build(context): Widget
+    }
+    
+    class CommunityCard {
+        +community: Community
+        +onTap: VoidCallback?
+        +build(context): Widget
+    }
+    
+    class ARStickerPanel {
+        +onStickerSelected: Function(ARStickerTemplate)
+        +build(context): Widget
+    }
+}
+
+' Theme & Configuration Layer
+package "Theme & Configuration" {
+    class AppTheme {
+        +primaryBlack: Color
+        +secondaryBlack: Color
+        +accentOrange: Color
+        +accentBlue: Color
+        +primaryText: Color
+        +secondaryText: Color
+        +primaryGradient: LinearGradient
+        +accentGradient: LinearGradient
+        +backgroundGradient: LinearGradient
+        +darkTheme: ThemeData
+    }
+    
+    class Dependencies {
+        +getProviders(): List<SingleChildWidget>
+    }
+}
+
+' Utilities Layer
+package "Utilities" {
+    class PermissionHelper {
+        +requestCameraPermission(): Future<bool>
+        +requestStoragePermission(): Future<bool>
+        +requestLocationPermission(): Future<bool>
+    }
+    
+    class ToastHelper {
+        +success(message): void
+        +error(message): void
+        +info(message): void
+    }
+}
+
+' Relationships
+MyApp --> MainNavigation
+MyApp --> Dependencies
+MainNavigation --> CustomBottomNavigation
+MainNavigation --> CameraPage
+MainNavigation --> DiscoverPage
+MainNavigation --> CommunitiesScreen
+MainNavigation --> SimpleProfilePage
+
+AuthWrapper --> AuthService
+AuthService --> UserService
+
+CameraPage --> MediaService
+CameraPage --> PermissionHelper
+CameraPage --> PreviewPage
+
+ARGraffitiPage --> ARStickerManager
+ARGraffitiPage --> ARStickerPanel
+ARSpherePageState --> ARSphereService
+
+ARStickerManager --> ARService
+ARService --> ARSticker
+ARSticker --> StickerType
+ARSticker --> StickerState
+ARStickerManager --> ARMode
+ARStickerManager --> ARStickerTemplate
+ARStickerTemplate --> StickerTemplates
+
+CommunitiesScreen --> CommunityViewModel
+CommunityViewModel --> CommunityRepository
+CommunityRepository --> FirestoreService
+CommunityRepository --> CommunityApiModel
+CommunityApiModel --> Community
+Community --> CommunityStats
+Community --> CommunityVisibility
+
+CommunityCard --> Community
+ARStickerPanel --> ARStickerTemplate
+
+Dependencies --> FirestoreService
+Dependencies --> CommunityRepository
+Dependencies --> CommunityViewModel
+
+@enduml

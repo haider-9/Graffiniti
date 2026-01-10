@@ -37,6 +37,11 @@ class CustomBottomNavigation extends StatelessWidget {
             label: 'Discover',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.search),
+            activeIcon: Icon(Icons.search),
+            label: 'Search',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.camera_alt_outlined),
             activeIcon: Icon(Icons.camera_alt),
             label: 'Camera',
@@ -44,7 +49,7 @@ class CustomBottomNavigation extends StatelessWidget {
           BottomNavigationBarItem(
             icon: Icon(Icons.groups_outlined),
             activeIcon: Icon(Icons.groups),
-            label: 'communities',
+            label: 'Communities',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),

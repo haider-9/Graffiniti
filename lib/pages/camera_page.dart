@@ -7,11 +7,30 @@ import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as path;
 import '../main.dart';
 import '../core/theme/app_theme.dart';
-import '../core/widgets/glassmorphic_container.dart';
 import '../core/utils/permission_helper.dart';
 import '../core/services/media_service.dart';
 import 'ar_graffiti_page.dart';
 import 'ar_demo_launcher.dart';
+
+class CameraPageController {
+  static _CameraPageState? _currentInstance;
+
+  static void setPageVisible(bool isVisible) {
+    if (isVisible) {
+      _currentInstance?.onPageVisible();
+    } else {
+      _currentInstance?.onPageInvisible();
+    }
+  }
+
+  static void registerInstance(_CameraPageState instance) {
+    _currentInstance = instance;
+  }
+
+  static void unregisterInstance() {
+    _currentInstance = null;
+  }
+}
 
 class AspectRatioOption {
   final String label;
@@ -29,11 +48,16 @@ class CameraPage extends StatefulWidget {
 }
 
 class _CameraPageState extends State<CameraPage>
-    with WidgetsBindingObserver, TickerProviderStateMixin {
+    with
+        WidgetsBindingObserver,
+        TickerProviderStateMixin,
+        AutomaticKeepAliveClientMixin {
   CameraController? _controller;
   Future<void>? _initializeControllerFuture;
   bool _isFlashOn = false;
   bool _isRearCamera = true;
+  bool _isPageVisible =
+      false; // Start as invisible since camera is not the default page
 
   late AnimationController _captureAnimationController;
   late AnimationController _modeAnimationController;
@@ -51,8 +75,12 @@ class _CameraPageState extends State<CameraPage>
   ];
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   void initState() {
     super.initState();
+    CameraPageController.registerInstance(this);
     WidgetsBinding.instance.addObserver(this);
     _captureAnimationController = AnimationController(
       duration: const Duration(milliseconds: 200),
@@ -63,7 +91,32 @@ class _CameraPageState extends State<CameraPage>
       vsync: this,
     );
     _requestPermissions();
-    _initializeCamera();
+    // Don't initialize camera automatically - wait for page to become visible
+  }
+
+  // Method to be called when page becomes visible
+  void onPageVisible() {
+    if (!_isPageVisible) {
+      _isPageVisible = true;
+      _initializeCamera();
+    }
+  }
+
+  // Method to be called when page becomes invisible
+  void onPageInvisible() {
+    if (_isPageVisible) {
+      _isPageVisible = false;
+      _disposeCamera();
+    }
+  }
+
+  Future<void> _disposeCamera() async {
+    await _controller?.dispose();
+    _controller = null;
+    _initializeControllerFuture = null;
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   Future<void> _requestPermissions() async {
@@ -80,6 +133,7 @@ class _CameraPageState extends State<CameraPage>
 
   @override
   void dispose() {
+    CameraPageController.unregisterInstance();
     WidgetsBinding.instance.removeObserver(this);
     _controller?.dispose();
     _captureAnimationController.dispose();
@@ -91,40 +145,84 @@ class _CameraPageState extends State<CameraPage>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final CameraController? cameraController = _controller;
 
-    if (cameraController == null || !cameraController.value.isInitialized) {
+    // Only handle lifecycle changes if the camera page is currently visible
+    if (cameraController == null ||
+        !cameraController.value.isInitialized ||
+        !_isPageVisible) {
       return;
     }
 
-    if (state == AppLifecycleState.inactive) {
-      cameraController.dispose();
-    } else if (state == AppLifecycleState.resumed) {
-      _initializeCamera();
+    switch (state) {
+      case AppLifecycleState.paused:
+        // App is paused (e.g., notification panel opened, app switcher)
+        // Keep camera running since we're still on the camera page
+        break;
+      case AppLifecycleState.inactive:
+        // App is inactive but still visible (e.g., incoming call overlay)
+        // Keep camera running since we're still on the camera page
+        break;
+      case AppLifecycleState.detached:
+        // App is detached, dispose camera
+        _disposeCamera();
+        break;
+      case AppLifecycleState.resumed:
+        // App is resumed, reinitialize camera if needed and page is visible
+        if (_isPageVisible && !cameraController.value.isInitialized) {
+          _initializeCamera();
+        }
+        break;
+      case AppLifecycleState.hidden:
+        // App is hidden, keep camera running if page is visible
+        break;
     }
   }
 
   Future<void> _initializeCamera() async {
-    if (cameras.isEmpty) return;
+    if (cameras.isEmpty || !_isPageVisible) return;
+
+    // Dispose existing controller if it exists
+    await _controller?.dispose();
 
     final camera = _isRearCamera ? cameras.first : cameras.last;
     _controller = CameraController(
       camera,
       ResolutionPreset.veryHigh,
       enableAudio: false, // Audio not needed without video mode
+      imageFormatGroup: ImageFormatGroup.jpeg, // Ensure consistent format
     );
 
-    _initializeControllerFuture = _controller!.initialize().then((_) async {
-      try {
-        // Set initial flash mode after initialization
-        await _controller!.setFlashMode(
-          _isFlashOn ? FlashMode.torch : FlashMode.off,
-        );
-      } catch (e) {
-        debugPrint('Error setting initial flash mode: $e');
-      }
-    });
+    try {
+      _initializeControllerFuture = _controller!.initialize().then((_) async {
+        if (!mounted || !_isPageVisible) return;
 
-    if (mounted) {
-      setState(() {});
+        try {
+          // Set initial flash mode after initialization
+          await _controller!.setFlashMode(
+            _isFlashOn ? FlashMode.torch : FlashMode.off,
+          );
+        } catch (e) {
+          debugPrint('Error setting initial flash mode: $e');
+        }
+      });
+
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      debugPrint('Error initializing camera: $e');
+      // Show error to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Camera initialization failed. Please try again.',
+              style: TextStyle(color: Colors.white),
+            ),
+            backgroundColor: AppTheme.primaryBlack,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 
@@ -261,7 +359,10 @@ class _CameraPageState extends State<CameraPage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Flash not available on this camera'),
+            content: Text(
+              'Flash not available on this camera',
+              style: TextStyle(color: Colors.white),
+            ),
             backgroundColor: AppTheme.primaryBlack,
             duration: Duration(seconds: 2),
           ),
@@ -271,6 +372,15 @@ class _CameraPageState extends State<CameraPage>
   }
 
   void _switchCamera() async {
+    if (_controller == null) return;
+
+    // Show loading indicator during switch
+    setState(() {
+      _controller = null;
+      _initializeControllerFuture = null;
+    });
+
+    // Switch camera state
     setState(() {
       _isRearCamera = !_isRearCamera;
       // Turn off flash when switching to front camera (usually no flash)
@@ -278,8 +388,12 @@ class _CameraPageState extends State<CameraPage>
         _isFlashOn = false;
       }
     });
-    await _controller?.dispose();
-    _initializeCamera();
+
+    // Small delay to ensure smooth transition
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    // Initialize new camera
+    await _initializeCamera();
   }
 
   // Standard mobile camera overlay - shows crop area on fullscreen preview
@@ -483,11 +597,30 @@ class _CameraPageState extends State<CameraPage>
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          gradient: AppTheme.backgroundGradient,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              AppTheme.primaryBlack.withValues(alpha: 0.95),
+              AppTheme.primaryBlack,
+            ],
+          ),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.1),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 20,
+              offset: const Offset(0, -4),
+            ),
+          ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -496,37 +629,53 @@ class _CameraPageState extends State<CameraPage>
             // Handle bar
             Center(
               child: Container(
-                width: 40,
+                width: 48,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.white24,
+                  color: Colors.white.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
-            const SizedBox(height: 20),
-
-            // Title
-            const Text(
-              'Camera Settings',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
             const SizedBox(height: 24),
 
-            // Aspect Ratio Section
-            const Text(
-              'Aspect Ratio',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
+            // Title
+            Row(
+              children: [
+                Icon(Icons.settings, color: AppTheme.accentOrange, size: 24),
+                const SizedBox(width: 12),
+                const Text(
+                  'Camera Settings',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 32),
+
+            // Aspect Ratio Section
+            Row(
+              children: [
+                Icon(
+                  Icons.crop,
+                  color: Colors.white.withValues(alpha: 0.7),
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Aspect Ratio',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
 
             // Aspect ratio options
             Row(
@@ -546,30 +695,52 @@ class _CameraPageState extends State<CameraPage>
                       margin: EdgeInsets.only(
                         right: index < _aspectRatios.length - 1 ? 8 : 0,
                       ),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 20),
                       decoration: BoxDecoration(
                         gradient: isSelected ? AppTheme.accentGradient : null,
                         color: isSelected
                             ? null
-                            : AppTheme.lightGray.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(12),
-                        border: isSelected
-                            ? null
-                            : Border.all(color: Colors.white12),
+                            : Colors.white.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isSelected
+                              ? AppTheme.accentOrange.withValues(alpha: 0.5)
+                              : Colors.white.withValues(alpha: 0.1),
+                          width: 1,
+                        ),
+                        boxShadow: isSelected
+                            ? [
+                                BoxShadow(
+                                  color: AppTheme.accentOrange.withValues(
+                                    alpha: 0.2,
+                                  ),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                            : null,
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(option.icon, color: Colors.white, size: 24),
-                          const SizedBox(height: 8),
+                          Icon(
+                            option.icon,
+                            color: isSelected
+                                ? Colors.white
+                                : Colors.white.withValues(alpha: 0.7),
+                            size: 28,
+                          ),
+                          const SizedBox(height: 12),
                           Text(
                             option.label,
                             style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
+                              color: isSelected
+                                  ? Colors.white
+                                  : Colors.white.withValues(alpha: 0.8),
+                              fontSize: 13,
                               fontWeight: isSelected
                                   ? FontWeight.w600
-                                  : FontWeight.normal,
+                                  : FontWeight.w500,
                             ),
                           ),
                         ],
@@ -580,7 +751,7 @@ class _CameraPageState extends State<CameraPage>
               }),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -589,6 +760,7 @@ class _CameraPageState extends State<CameraPage>
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     return Scaffold(
       backgroundColor: AppTheme.primaryBlack,
       body: FutureBuilder<void>(
@@ -622,8 +794,82 @@ class _CameraPageState extends State<CameraPage>
               decoration: const BoxDecoration(
                 gradient: AppTheme.backgroundGradient,
               ),
-              child: const Center(
-                child: CircularProgressIndicator(color: AppTheme.accentOrange),
+              child: Stack(
+                children: [
+                  // Professional loading background
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            AppTheme.primaryBlack,
+                            AppTheme.primaryBlack.withValues(alpha: 0.8),
+                            AppTheme.primaryBlack,
+                          ],
+                        ),
+                      ),
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Animated camera icon
+                            Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: AppTheme.primaryGradient,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppTheme.accentOrange.withValues(
+                                      alpha: 0.3,
+                                    ),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 8),
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                Icons.camera_alt_outlined,
+                                color: Colors.white,
+                                size: 40,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+
+                            // Loading indicator
+                            SizedBox(
+                              width: 32,
+                              height: 32,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 3,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  AppTheme.accentOrange,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Loading text
+                            Text(
+                              'Initializing Camera...',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.8),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Top controls (still visible during loading)
+                  _buildTopOverlay(),
+                ],
               ),
             );
           }
@@ -647,29 +893,61 @@ class _CameraPageState extends State<CameraPage>
           if (flashAvailable)
             GestureDetector(
               onTap: _toggleFlash,
-              child: GlassmorphicContainer(
-                width: 44,
-                height: 44,
-                borderRadius: const BorderRadius.all(Radius.circular(22)),
+              child: Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: _isFlashOn
+                      ? AppTheme.accentOrange.withValues(alpha: 0.2)
+                      : Colors.black.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: _isFlashOn
+                        ? AppTheme.accentOrange.withValues(alpha: 0.5)
+                        : Colors.white.withValues(alpha: 0.2),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
                 child: Icon(
                   _isFlashOn ? Icons.flash_on : Icons.flash_off,
                   color: _isFlashOn ? AppTheme.accentOrange : Colors.white,
-                  size: 20,
+                  size: 22,
                 ),
               ),
             )
           else
             // Placeholder to maintain layout
-            SizedBox(width: 44, height: 44),
+            SizedBox(width: 48, height: 48),
 
           // Settings
           GestureDetector(
             onTap: _showSettingsMenu,
-            child: GlassmorphicContainer(
-              width: 44,
-              height: 44,
-              borderRadius: BorderRadius.circular(22),
-              child: Icon(Icons.tune, color: Colors.white, size: 20),
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(Icons.tune, color: Colors.white, size: 22),
             ),
           ),
         ],
@@ -692,18 +970,25 @@ class _CameraPageState extends State<CameraPage>
               );
             },
             child: Container(
-              width: 50,
-              height: 50,
+              width: 56,
+              height: 56,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Colors.purple, Colors.blue],
+                  colors: [
+                    Colors.purple.withValues(alpha: 0.9),
+                    Colors.blue.withValues(alpha: 0.9),
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(25),
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  width: 1,
+                ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.purple.withValues(alpha: 0.4),
+                    color: Colors.purple.withValues(alpha: 0.3),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -712,11 +997,11 @@ class _CameraPageState extends State<CameraPage>
               child: Icon(
                 Icons.view_in_ar_outlined,
                 color: Colors.white,
-                size: 24,
+                size: 26,
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
 
           // Direct AR Graffiti button
           GestureDetector(
@@ -727,11 +1012,15 @@ class _CameraPageState extends State<CameraPage>
               );
             },
             child: Container(
-              width: 50,
-              height: 50,
+              width: 56,
+              height: 56,
               decoration: BoxDecoration(
                 gradient: AppTheme.accentGradient,
-                borderRadius: BorderRadius.circular(25),
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  width: 1,
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: AppTheme.accentOrange.withValues(alpha: 0.4),
@@ -740,7 +1029,7 @@ class _CameraPageState extends State<CameraPage>
                   ),
                 ],
               ),
-              child: Icon(Icons.view_in_ar, color: Colors.white, size: 24),
+              child: Icon(Icons.view_in_ar, color: Colors.white, size: 26),
             ),
           ),
           const SizedBox(height: 16),
@@ -748,14 +1037,27 @@ class _CameraPageState extends State<CameraPage>
           // Switch camera
           GestureDetector(
             onTap: _switchCamera,
-            child: GlassmorphicContainer(
-              width: 50,
-              height: 50,
-              borderRadius: BorderRadius.circular(25),
-              child: Icon(Icons.flip_camera_ios, color: Colors.white, size: 24),
+            child: Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(Icons.flip_camera_ios, color: Colors.white, size: 26),
             ),
           ),
-          const SizedBox(height: 16),
         ],
       ),
     );
@@ -775,17 +1077,27 @@ class _CameraPageState extends State<CameraPage>
               // Open gallery
             },
             child: Container(
-              width: 50,
-              height: 50,
+              width: 56,
+              height: 56,
               decoration: BoxDecoration(
-                color: AppTheme.lightGray,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white24, width: 1),
+                color: Colors.black.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Icon(
                 Icons.photo_library_outlined,
                 color: Colors.white,
-                size: 24,
+                size: 26,
               ),
             ),
           ),
@@ -799,26 +1111,33 @@ class _CameraPageState extends State<CameraPage>
                 return Transform.scale(
                   scale: 1.0 - (_captureAnimationController.value * 0.1),
                   child: Container(
-                    width: 80,
-                    height: 80,
+                    width: 84,
+                    height: 84,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: LinearGradient(
                         colors: [
                           Colors.white,
-                          Colors.white.withValues(alpha: 0.8),
+                          Colors.white.withValues(alpha: 0.9),
                         ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.white.withValues(alpha: 0.4),
-                          blurRadius: 16,
-                          offset: const Offset(0, 4),
+                          color: Colors.white.withValues(alpha: 0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 6),
+                        ),
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
                         ),
                       ],
                     ),
                     child: Container(
-                      margin: const EdgeInsets.all(4),
+                      margin: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: AppTheme.primaryBlack,
@@ -835,22 +1154,7 @@ class _CameraPageState extends State<CameraPage>
             onTap: () {
               // Open effects
             },
-            child: Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                gradient: AppTheme.primaryGradient,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.accentOrange.withValues(alpha: 0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Icon(Icons.auto_fix_high, color: Colors.white, size: 24),
-            ),
+            child: SizedBox(width: 24),
           ),
         ],
       ),
@@ -859,46 +1163,76 @@ class _CameraPageState extends State<CameraPage>
 
   Widget _buildModeSelector() {
     return Positioned(
-      bottom: MediaQuery.of(context).padding.bottom + 120,
+      bottom: MediaQuery.of(context).padding.bottom + 130,
       left: 0,
       right: 0,
       child: Center(
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: List.generate(_modes.length, (index) {
-            final isSelected = _selectedMode == index;
-            return GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedMode = index;
-                });
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                margin: const EdgeInsets.symmetric(horizontal: 8),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  gradient: isSelected ? AppTheme.primaryGradient : null,
-                  color: isSelected ? null : Colors.transparent,
-                  borderRadius: BorderRadius.circular(20),
-                  border: isSelected ? null : Border.all(color: Colors.white24),
-                ),
-                child: Text(
-                  _modes[index],
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.white70,
-                    fontSize: 14,
-                    fontWeight: isSelected
-                        ? FontWeight.w600
-                        : FontWeight.normal,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.2),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: List.generate(_modes.length, (index) {
+              final isSelected = _selectedMode == index;
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedMode = index;
+                  });
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  margin: const EdgeInsets.symmetric(horizontal: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: isSelected ? AppTheme.primaryGradient : null,
+                    color: isSelected ? null : Colors.transparent,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: AppTheme.accentOrange.withValues(
+                                alpha: 0.3,
+                              ),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Text(
+                    _modes[index],
+                    style: TextStyle(
+                      color: isSelected
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.7),
+                      fontSize: 15,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w500,
+                    ),
                   ),
                 ),
-              ),
-            );
-          }),
+              );
+            }),
+          ),
         ),
       ),
     );
@@ -967,27 +1301,57 @@ class _PreviewPageState extends State<PreviewPage> {
               children: [
                 GestureDetector(
                   onTap: () => Navigator.pop(context),
-                  child: GlassmorphicContainer(
-                    width: 44,
-                    height: 44,
-                    borderRadius: BorderRadius.circular(22),
-                    child: Icon(Icons.close, color: Colors.white, size: 20),
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.4),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Icon(Icons.close, color: Colors.white, size: 22),
                   ),
                 ),
                 GestureDetector(
                   onTap: _isSaving ? null : _saveMedia,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 10,
+                      horizontal: 24,
+                      vertical: 12,
                     ),
                     decoration: BoxDecoration(
                       gradient: _isSaving
                           ? LinearGradient(
-                              colors: [Colors.grey, Colors.grey.shade600],
+                              colors: [
+                                Colors.grey.withValues(alpha: 0.6),
+                                Colors.grey.withValues(alpha: 0.8),
+                              ],
                             )
                           : AppTheme.primaryGradient,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _isSaving
+                              ? Colors.black.withValues(alpha: 0.2)
+                              : AppTheme.accentOrange.withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -1010,6 +1374,7 @@ class _PreviewPageState extends State<PreviewPage> {
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
+                            fontSize: 15,
                           ),
                         ),
                       ],
@@ -1068,18 +1433,32 @@ class _PreviewPageState extends State<PreviewPage> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          GlassmorphicContainer(
-            width: 56,
-            height: 56,
-            borderRadius: BorderRadius.circular(28),
-            child: Icon(icon, color: Colors.white, size: 24),
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(32),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.3),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Icon(icon, color: Colors.white, size: 28),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
             label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.9),
+              fontSize: 13,
               fontWeight: FontWeight.w500,
             ),
           ),

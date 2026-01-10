@@ -8,6 +8,7 @@ import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
 import 'pages/camera_page.dart';
 import 'pages/discover_page.dart';
+import 'pages/search_page.dart';
 import 'pages/simple_profile_page.dart';
 import 'core/widgets/custom_bottom_navigation.dart';
 import 'core/widgets/auth_wrapper.dart';
@@ -65,6 +66,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
   final List<Widget> _pages = const [
     DiscoverPage(),
+    SearchPage(),
     CameraPage(),
     CommunitiesScreen(),
     SimpleProfilePage(),
@@ -74,6 +76,17 @@ class _MainNavigationState extends State<MainNavigation> {
   void initState() {
     super.initState();
     _pageController = PageController();
+    // Set initial camera page visibility (camera is at index 2, default is 0)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      CameraPageController.setPageVisible(false);
+    });
+  }
+
+  void _onPageChanged(int index) {
+    setState(() => _currentIndex = index);
+
+    // Notify camera page about visibility changes
+    CameraPageController.setPageVisible(index == 2);
   }
 
   @override
@@ -89,12 +102,15 @@ class _MainNavigationState extends State<MainNavigation> {
       body: PageView(
         controller: _pageController,
         physics: const NeverScrollableScrollPhysics(),
-        onPageChanged: (index) => setState(() => _currentIndex = index),
+        onPageChanged: _onPageChanged,
         children: _pages,
       ),
       bottomNavigationBar: CustomBottomNavigation(
         currentIndex: _currentIndex,
-        onTap: (index) => _pageController.jumpToPage(index),
+        onTap: (index) {
+          _pageController.jumpToPage(index);
+          _onPageChanged(index);
+        },
       ),
     );
   }

@@ -15,7 +15,6 @@ class CommunitiesScreen extends StatefulWidget {
 
 class _CommunitiesScreenState extends State<CommunitiesScreen> {
   final TextEditingController _searchController = TextEditingController();
-  bool _showSearchBar = false;
 
   @override
   void initState() {
@@ -31,14 +30,9 @@ class _CommunitiesScreenState extends State<CommunitiesScreen> {
     super.dispose();
   }
 
-  void _toggleSearch() {
-    setState(() {
-      _showSearchBar = !_showSearchBar;
-      if (!_showSearchBar) {
-        _searchController.clear();
-        context.read<CommunityViewModel>().clearSearch();
-      }
-    });
+  void _clearSearch() {
+    _searchController.clear();
+    context.read<CommunityViewModel>().clearSearch();
   }
 
   @override
@@ -49,13 +43,6 @@ class _CommunitiesScreenState extends State<CommunitiesScreen> {
         backgroundColor: AppTheme.primaryBlack,
         title: const Text('Communities', style: TextStyle(color: Colors.white)),
         actions: [
-          IconButton(
-            icon: Icon(
-              _showSearchBar ? Icons.close : Icons.search,
-              color: Colors.white,
-            ),
-            onPressed: _toggleSearch,
-          ),
           IconButton(
             icon: const Icon(Icons.add, color: Colors.white),
             onPressed: () {
@@ -73,12 +60,12 @@ class _CommunitiesScreenState extends State<CommunitiesScreen> {
         decoration: const BoxDecoration(gradient: AppTheme.backgroundGradient),
         child: Column(
           children: [
-            if (_showSearchBar) _buildSearchBar(),
+            _buildSearchBar(),
             Expanded(
               child: Consumer<CommunityViewModel>(
                 builder: (context, viewModel, child) {
                   // Show search results if searching
-                  if (_showSearchBar && viewModel.hasSearchQuery) {
+                  if (viewModel.hasSearchQuery) {
                     return _buildSearchResults(viewModel);
                   }
 
@@ -183,7 +170,6 @@ class _CommunitiesScreenState extends State<CommunitiesScreen> {
         builder: (context, viewModel, child) {
           return TextField(
             controller: _searchController,
-            autofocus: true,
             style: const TextStyle(color: Colors.white),
             onChanged: (query) {
               viewModel.searchCommunities(query);
@@ -197,10 +183,7 @@ class _CommunitiesScreenState extends State<CommunitiesScreen> {
               ),
               suffixIcon: viewModel.hasSearchQuery
                   ? IconButton(
-                      onPressed: () {
-                        _searchController.clear();
-                        viewModel.clearSearch();
-                      },
+                      onPressed: _clearSearch,
                       icon: const Icon(
                         Icons.clear,
                         color: AppTheme.secondaryText,

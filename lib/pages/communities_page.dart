@@ -27,7 +27,6 @@ class _CommunitiesPageState extends State<CommunitiesPage>
   List<Community> _searchResults = [];
   String _selectedFilter = 'All';
   String _searchQuery = '';
-  bool _showSearchBar = false;
   bool _isSearching = false;
 
   @override
@@ -134,15 +133,12 @@ class _CommunitiesPageState extends State<CommunitiesPage>
     }
   }
 
-  void _toggleSearch() {
+  void _clearSearch() {
+    _searchController.clear();
     setState(() {
-      _showSearchBar = !_showSearchBar;
-      if (!_showSearchBar) {
-        _searchController.clear();
-        _searchQuery = '';
-        _searchResults = [];
-        _isSearching = false;
-      }
+      _searchQuery = '';
+      _searchResults = [];
+      _isSearching = false;
     });
   }
 
@@ -239,10 +235,10 @@ class _CommunitiesPageState extends State<CommunitiesPage>
           child: Column(
             children: [
               _buildHeader(),
-              if (_showSearchBar) _buildSearchBar(),
+              _buildSearchBar(),
               _buildTabBar(),
               Expanded(
-                child: _showSearchBar && _searchQuery.isNotEmpty
+                child: _searchQuery.isNotEmpty
                     ? _buildSearchResults()
                     : TabBarView(
                         controller: _tabController,
@@ -281,11 +277,6 @@ class _CommunitiesPageState extends State<CommunitiesPage>
             ),
           ),
           const Spacer(),
-          _buildIconButton(
-            _showSearchBar ? Icons.close : Icons.search,
-            _toggleSearch,
-          ),
-          const SizedBox(width: 8),
           _buildIconButton(Icons.notifications_outlined, () {}),
         ],
       ),
@@ -318,7 +309,6 @@ class _CommunitiesPageState extends State<CommunitiesPage>
       ),
       child: TextField(
         controller: _searchController,
-        autofocus: true,
         style: const TextStyle(color: Colors.white),
         decoration: InputDecoration(
           hintText: 'Search communities by name, description, tags...',
@@ -326,9 +316,7 @@ class _CommunitiesPageState extends State<CommunitiesPage>
           prefixIcon: const Icon(Icons.search, color: AppTheme.secondaryText),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
-                  onPressed: () {
-                    _searchController.clear();
-                  },
+                  onPressed: _clearSearch,
                   icon: const Icon(Icons.clear, color: AppTheme.secondaryText),
                 )
               : null,

@@ -352,7 +352,7 @@ class _ARSpherePageState extends State<ARSpherePage> {
               ),
               const SizedBox(height: 16),
               Text(
-                _errorMessage!,
+                "This device does not support AR capabilities.",
                 style: TextStyle(color: Colors.white70, fontSize: 16),
                 textAlign: TextAlign.center,
               ),

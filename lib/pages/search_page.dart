@@ -134,7 +134,7 @@ class _SearchPageState extends State<SearchPage> {
                 onChanged: _performSearch,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  hintText: 'Search posts, artists, locations...',
+                  hintText: 'Search...',
                   hintStyle: TextStyle(
                     color: Colors.white.withValues(alpha: 0.5),
                   ),

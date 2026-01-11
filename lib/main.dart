@@ -9,7 +9,7 @@ import 'core/theme/app_theme.dart';
 import 'pages/camera_page.dart';
 import 'pages/discover_page.dart';
 import 'pages/search_page.dart';
-import 'pages/simple_profile_page.dart';
+import 'pages/profile_page.dart';
 import 'core/widgets/custom_bottom_navigation.dart';
 import 'core/widgets/auth_wrapper.dart';
 import 'ui/community/widgets/communities_screen.dart';
@@ -69,7 +69,7 @@ class _MainNavigationState extends State<MainNavigation> {
     SearchPage(),
     CameraPage(),
     CommunitiesScreen(),
-    SimpleProfilePage(),
+    ProfilePage(),
   ];
 
   @override

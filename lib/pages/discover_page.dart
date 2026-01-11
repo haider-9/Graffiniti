@@ -201,7 +201,11 @@ class _DiscoverPageState extends State<DiscoverPage>
                       ),
                     ],
                   ),
-                  child: const Icon(Icons.location_pin, color: Colors.white, size: 20),
+                  child: const Icon(
+                    Icons.location_pin,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
               ),
             ],
@@ -352,261 +356,254 @@ class _DiscoverPageState extends State<DiscoverPage>
   }
 
   Widget _buildGraffitiCard(Map<String, dynamic> graffiti, int index) {
-  return AnimatedBuilder(
-    animation: _animationController,
-    builder: (context, child) {
-      final slideAnimation = Tween<Offset>(
-        begin: const Offset(1, 0),
-        end: Offset.zero,
-      ).animate(
-        CurvedAnimation(
-          parent: _animationController,
-          curve: Interval(
-            (index * 0.1).clamp(0.0, 0.7),
-            ((index * 0.1) + 0.3).clamp(0.3, 1.0),
-            curve: Curves.easeOutCubic,
-          ),
-        ),
-      );
+    return AnimatedBuilder(
+      animation: _animationController,
+      builder: (context, child) {
+        final slideAnimation =
+            Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero).animate(
+              CurvedAnimation(
+                parent: _animationController,
+                curve: Interval(
+                  (index * 0.1).clamp(0.0, 0.7),
+                  ((index * 0.1) + 0.3).clamp(0.3, 1.0),
+                  curve: Curves.easeOutCubic,
+                ),
+              ),
+            );
 
-      // Reusable fallback/placeholder widget
-      Widget fallbackPreview() {
-        return Container(
-          height: 200,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                graffiti['color'].withValues(alpha: 0.3),
-                graffiti['color'].withValues(alpha: 0.1),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+        // Reusable fallback/placeholder widget
+        Widget fallbackPreview() {
+          return Container(
+            height: 200,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  graffiti['color'].withValues(alpha: 0.3),
+                  graffiti['color'].withValues(alpha: 0.1),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
             ),
-          ),
-          child: Center(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.view_in_ar, size: 48, color: graffiti['color']),
+                  const SizedBox(height: 8),
+                  Text(
+                    graffiti['title'],
+                    style: TextStyle(
+                      color: graffiti['color'],
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        // Image widget with fallback and loading
+        Widget graffitiImage() {
+          final imageUrl = graffiti['imageUrl'];
+          if (imageUrl == null || imageUrl.isEmpty) return fallbackPreview();
+
+          return SizedBox(
+            height: 200,
+            width: double.infinity,
+            child: ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+              ),
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.cover,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    alignment: Alignment.center,
+                    color: AppTheme.secondaryBlack,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        graffiti['color'],
+                      ),
+                    ),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  return fallbackPreview();
+                },
+              ),
+            ),
+          );
+        }
+
+        return SlideTransition(
+          position: slideAnimation,
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: AppTheme.secondaryBlack,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+              boxShadow: [
+                BoxShadow(
+                  color: graffiti['color'].withValues(alpha: 0.2),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.view_in_ar,
-                  size: 48,
-                  color: graffiti['color'],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  graffiti['title'],
-                  style: TextStyle(
-                    color: graffiti['color'],
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                graffitiImage(), // image with fallback
+                // Graffiti info
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 16,
+                            backgroundColor: graffiti['color'],
+                            child: Text(
+                              graffiti['artist'][1].toUpperCase(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  graffiti['artist'],
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                Text(
+                                  graffiti['time'],
+                                  style: const TextStyle(
+                                    color: AppTheme.mutedText,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: graffiti['color'].withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              graffiti['distance'],
+                              style: TextStyle(
+                                color: graffiti['color'],
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.location_on_outlined,
+                            size: 16,
+                            color: AppTheme.secondaryText,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            graffiti['address'] ??
+                                graffiti['location'] ??
+                                'Unknown location',
+                            style: const TextStyle(
+                              color: AppTheme.secondaryText,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.favorite_outline,
+                                size: 20,
+                                color: AppTheme.secondaryText,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${graffiti['likes']}',
+                                style: const TextStyle(
+                                  color: AppTheme.secondaryText,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: AppTheme.primaryGradient,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.view_in_ar,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
+                                SizedBox(width: 4),
+                                Text(
+                                  'View in AR',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
         );
-      }
-
-      // Image widget with fallback and loading
-      Widget graffitiImage() {
-        final imageUrl = graffiti['imageUrl'];
-        if (imageUrl == null || imageUrl.isEmpty) return fallbackPreview();
-
-        return SizedBox(
-          height: 200,
-          width: double.infinity,
-          child: ClipRRect(
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-            ),
-            child: Image.network(
-              imageUrl,
-              fit: BoxFit.cover,
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return Container(
-                  alignment: Alignment.center,
-                  color: AppTheme.secondaryBlack,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(graffiti['color']),
-                  ),
-                );
-              },
-              errorBuilder: (context, error, stackTrace) {
-                return fallbackPreview();
-              },
-            ),
-          ),
-        );
-      }
-
-      return SlideTransition(
-        position: slideAnimation,
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          decoration: BoxDecoration(
-            color: AppTheme.secondaryBlack,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-            boxShadow: [
-              BoxShadow(
-                color: graffiti['color'].withValues(alpha: 0.2),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              graffitiImage(), // image with fallback
-
-              // Graffiti info
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 16,
-                          backgroundColor: graffiti['color'],
-                          child: Text(
-                            graffiti['artist'][1].toUpperCase(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                graffiti['artist'],
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              Text(
-                                graffiti['time'],
-                                style: const TextStyle(
-                                  color: AppTheme.mutedText,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: graffiti['color'].withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            graffiti['distance'],
-                            style: TextStyle(
-                              color: graffiti['color'],
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.location_on_outlined,
-                          size: 16,
-                          color: AppTheme.secondaryText,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          graffiti['address'] ??
-                              graffiti['location'] ??
-                              'Unknown location',
-                          style: const TextStyle(
-                            color: AppTheme.secondaryText,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.favorite_outline,
-                              size: 20,
-                              color: AppTheme.secondaryText,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${graffiti['likes']}',
-                              style: const TextStyle(
-                                color: AppTheme.secondaryText,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            gradient: AppTheme.primaryGradient,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.view_in_ar,
-                                size: 16,
-                                color: Colors.white,
-                              ),
-                              SizedBox(width: 4),
-                              Text(
-                                'View in AR',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    },
-  );
-}
-
-
+      },
+    );
+  }
 }

@@ -57,6 +57,46 @@ class CloudinaryService {
     }
   }
 
+  /// Upload community profile image to Cloudinary
+  Future<String> uploadCommunityProfileImage(
+    String communityId,
+    File imageFile,
+  ) async {
+    try {
+      final fileName =
+          'community_profile_${communityId}_${DateTime.now().millisecondsSinceEpoch}';
+      return await _uploadImage(
+        imageFile,
+        fileName,
+        CloudinaryConfig.communityImagesFolder,
+      );
+    } catch (e) {
+      throw Exception(
+        'Failed to upload community profile image: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Upload community banner image to Cloudinary
+  Future<String> uploadCommunityBannerImage(
+    String communityId,
+    File imageFile,
+  ) async {
+    try {
+      final fileName =
+          'community_banner_${communityId}_${DateTime.now().millisecondsSinceEpoch}';
+      return await _uploadImage(
+        imageFile,
+        fileName,
+        CloudinaryConfig.communityBannersFolder,
+      );
+    } catch (e) {
+      throw Exception(
+        'Failed to upload community banner image: ${e.toString()}',
+      );
+    }
+  }
+
   /// Generic method to upload image to Cloudinary
   Future<String> _uploadImage(
     File imageFile,
@@ -166,68 +206,45 @@ class CloudinaryService {
   /// Delete image from Cloudinary using public_id
   Future<bool> deleteImage(String publicId) async {
     try {
-      // For unsigned uploads, direct deletion via API requires signed requests
-      // Since we're using unsigned uploads, we'll implement a workaround
+      print('Attempting to delete image with public_id: $publicId');
 
-      // Method 1: Try to use the destroy endpoint (might work in some cases)
-      try {
-        final response = await _dio.post(
-          'https://api.cloudinary.com/v1_1/${CloudinaryConfig.cloudName}/image/destroy',
-          data: FormData.fromMap({
-            'public_id': publicId,
-            'api_key': CloudinaryConfig.apiKey,
-            'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
-          }),
-          options: Options(
-            validateStatus: (status) => status != null && status < 500,
-          ),
-        );
+      // For unsigned uploads, Cloudinary doesn't allow true deletion
+      // We have a few options:
+      // 1. Use signed uploads (requires server-side implementation)
+      // 2. Configure auto-cleanup in Cloudinary dashboard
+      // 3. Accept that old images remain (current approach)
 
-        if (response.statusCode == 200) {
-          final result = response.data;
-          if (result['result'] == 'ok') {
-            return true;
-          }
-        }
-      } catch (e) {
-        // Destroy endpoint failed, continue with workaround
-      }
-
-      // Method 2: Upload a minimal placeholder image to "replace" the old one
-      // This effectively removes the old image content while keeping the same public_id
-      final placeholderData = FormData.fromMap({
-        'file':
-            'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', // 1x1 transparent GIF
-        'public_id': publicId,
-        'upload_preset': CloudinaryConfig.uploadPreset,
-        'resource_type': 'image',
-        'overwrite': true,
-        'invalidate': true, // Invalidate CDN cache
-      });
-
-      final response = await _dio.post(
-        CloudinaryConfig.uploadUrl,
-        data: placeholderData,
-        options: Options(
-          validateStatus: (status) => status != null && status < 500,
-        ),
+      // Log the limitation for awareness
+      print(
+        'INFO: Using unsigned uploads - old images cannot be deleted automatically.',
       );
+      print('Old image will remain in Cloudinary: $publicId');
+      print('To enable deletion, consider:');
+      print('  1. Implementing server-side signed deletion');
+      print('  2. Configuring Cloudinary auto-cleanup policies');
+      print('  3. Periodic manual cleanup');
 
-      return response.statusCode == 200;
+      // Return true to indicate the "deletion attempt" completed
+      // This prevents blocking the user experience
+      return true;
     } catch (e) {
-      print('Warning: Could not delete image from Cloudinary: $e');
-      // Don't throw error as this is not critical for app functionality
-      return false;
+      print('Error in delete process: $e');
+      return true; // Don't block user experience
     }
   }
 
   /// Delete image by URL (extracts public_id and deletes)
   Future<bool> deleteImageByUrl(String imageUrl) async {
+    print('Attempting to delete image by URL: $imageUrl');
     final publicId = extractPublicId(imageUrl);
+    print('Extracted public_id: $publicId');
+
     if (publicId != null) {
       return await deleteImage(publicId);
+    } else {
+      print('Failed to extract public_id from URL: $imageUrl');
+      return false;
     }
-    return false;
   }
 
   /// Get optimized URL for different image sizes

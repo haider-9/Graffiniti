@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
@@ -25,6 +26,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   final UserService _userService = UserService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   bool _isLoading = false;
   bool _isLoadingData = true;
@@ -136,361 +138,323 @@ class _EditProfilePageState extends State<EditProfilePage> {
       backgroundColor: AppTheme.primaryBlack,
       body: Container(
         decoration: const BoxDecoration(gradient: AppTheme.backgroundGradient),
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildHeader(),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      children: [
-                        _buildProfilePicture(),
-                        const SizedBox(height: 20),
-                        _buildBannerImage(),
-                        const SizedBox(height: 32),
-                        _buildTextField(
-                          controller: _nameController,
-                          label: 'Display Name',
-                          icon: Icons.person_outline,
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Display name is required';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        _buildTextField(
-                          controller: _bioController,
-                          label: 'Bio',
-                          icon: Icons.description_outlined,
-                          maxLines: 3,
-                          maxLength: 150,
-                        ),
-                        const SizedBox(height: 16),
-                        _buildTextField(
-                          controller: _locationController,
-                          label: 'Location',
-                          icon: Icons.location_on_outlined,
-                        ),
-                        const SizedBox(height: 16),
-                        _buildTextField(
-                          controller: _websiteController,
-                          label: 'Website',
-                          icon: Icons.link_outlined,
-                        ),
-                        const SizedBox(height: 32),
-                        _buildSaveButton(),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: AppTheme.accentGray,
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-              ),
-              child: const Icon(
-                Icons.arrow_back,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          const Text(
-            'Edit Profile',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const Spacer(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBannerImage() {
-    return Column(
-      children: [
-        Container(
-          width: double.infinity,
-          height: 150,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: _selectedBannerImage != null
-                ? Stack(
-                    fit: StackFit.expand,
+        child: CustomScrollView(
+          slivers: [
+            _buildSliverAppBar(),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
                     children: [
-                      Image.file(_selectedBannerImage!, fit: BoxFit.cover),
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.bottomCenter,
-                            end: Alignment.topCenter,
-                            colors: [
-                              Colors.black.withValues(alpha: 0.4),
-                              Colors.transparent,
-                            ],
-                            stops: const [0.0, 0.6],
-                          ),
-                        ),
-                      ),
-                    ],
-                  )
-                : _userData['bannerImageUrl'] != null &&
-                      _userData['bannerImageUrl'].toString().isNotEmpty
-                ? Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Image.network(
-                        _userData['bannerImageUrl'],
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: AppTheme.secondaryBlack,
-                            child: const Center(
-                              child: Icon(
-                                Icons.image_outlined,
-                                color: AppTheme.secondaryText,
-                                size: 48,
-                              ),
-                            ),
-                          );
+                      const SizedBox(
+                        height: 50,
+                      ), // Space for overlapping profile image
+                      _buildTextField(
+                        controller: _nameController,
+                        label: 'Display Name',
+                        icon: Icons.person_outline,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Display name is required';
+                          }
+                          return null;
                         },
                       ),
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.bottomCenter,
-                            end: Alignment.topCenter,
-                            colors: [
-                              Colors.black.withValues(alpha: 0.4),
-                              Colors.transparent,
-                            ],
-                            stops: const [0.0, 0.6],
-                          ),
-                        ),
+                      const SizedBox(height: 16),
+                      _buildTextField(
+                        controller: _bioController,
+                        label: 'Bio',
+                        icon: Icons.description_outlined,
+                        maxLines: 3,
+                        maxLength: 150,
                       ),
+                      const SizedBox(height: 16),
+                      _buildTextField(
+                        controller: _locationController,
+                        label: 'Location',
+                        icon: Icons.location_on_outlined,
+                      ),
+                      const SizedBox(height: 16),
+                      _buildTextField(
+                        controller: _websiteController,
+                        label: 'Website',
+                        icon: Icons.link_outlined,
+                      ),
+                      const SizedBox(height: 32),
+                      _buildSaveButton(),
                     ],
-                  )
-                : Container(
-                    color: AppTheme.secondaryBlack,
-                    child: const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.image_outlined,
-                            color: AppTheme.secondaryText,
-                            size: 48,
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            'Add Banner Image',
-                            style: TextStyle(
-                              color: AppTheme.secondaryText,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            GestureDetector(
-              onTap: () => _showBannerImagePickerDialog(),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  gradient: AppTheme.primaryGradient,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.camera_alt, color: Colors.white, size: 16),
-                    SizedBox(width: 6),
-                    Text(
-                      'Change Banner',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
                 ),
               ),
             ),
-            if (_selectedBannerImage != null ||
-                (_userData['bannerImageUrl'] != null &&
-                    _userData['bannerImageUrl'].toString().isNotEmpty))
-              Padding(
-                padding: const EdgeInsets.only(left: 12),
-                child: GestureDetector(
-                  onTap: () => _removeBannerImage(),
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppTheme.accentGray,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Icon(
-                      Icons.delete_outline,
-                      color: AppTheme.accentRed,
-                      size: 16,
-                    ),
-                  ),
-                ),
-              ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSliverAppBar() {
+    return SliverAppBar(
+      expandedHeight: 280,
+      floating: false,
+      pinned: true,
+      backgroundColor: AppTheme.primaryBlack,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      leading: IconButton(
+        icon: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.5),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+        ),
+        onPressed: () => Navigator.pop(context),
+      ),
+      title: const Text(
+        'Edit Profile',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      centerTitle: true,
+      flexibleSpace: FlexibleSpaceBar(
+        background: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Cover/Banner Image
+            _buildCoverImage(),
+            // Dark gradient overlay for better visual hierarchy
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.2),
+                    Colors.black.withValues(alpha: 0.1),
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: 0.8),
+                  ],
+                  stops: const [0.0, 0.2, 0.6, 1.0],
+                ),
+              ),
+            ),
+            // Cover image action buttons positioned higher for better spacing
+            Positioned(bottom: 25, right: 15, child: _buildCoverImageActions()),
+            // Profile picture positioned to overlap from cover into content area
+            Positioned(bottom: 10, left: 20, child: _buildProfilePicture()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCoverImage() {
+    if (_selectedBannerImage != null) {
+      return Image.file(_selectedBannerImage!, fit: BoxFit.cover);
+    }
+
+    if (_userData['bannerImageUrl'] != null &&
+        _userData['bannerImageUrl'].toString().isNotEmpty) {
+      return Image.network(
+        _userData['bannerImageUrl'],
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return _buildDefaultCover();
+        },
+      );
+    }
+
+    return _buildDefaultCover();
+  }
+
+  Widget _buildDefaultCover() {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1a1a1a), Color(0xFF2d2d2d), Color(0xFF404040)],
+        ),
+      ),
+      child: const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.add_photo_alternate_outlined,
+              color: Colors.white54,
+              size: 48,
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Add Cover Photo',
+              style: TextStyle(
+                color: Colors.white54,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCoverImageActions() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildCoverActionButton(
+          icon: Icons.camera_alt,
+          label: 'Change Cover',
+          onTap: _showBannerImagePickerDialog,
+        ),
+        if (_selectedBannerImage != null ||
+            (_userData['bannerImageUrl'] != null &&
+                _userData['bannerImageUrl'].toString().isNotEmpty)) ...[
+          const SizedBox(width: 8),
+          _buildCoverActionButton(
+            icon: Icons.delete_outline,
+            label: 'Remove',
+            onTap: _removeBannerImage,
+            isDestructive: true,
+          ),
+        ],
       ],
     );
   }
 
-  Widget _buildProfilePicture() {
-    return Column(
-      children: [
-        Stack(
+  Widget _buildCoverActionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    bool isDestructive = false,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isDestructive
+              ? Colors.red.withValues(alpha: 0.8)
+              : Colors.black.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.3),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: AppTheme.primaryGradient,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.accentOrange.withValues(alpha: 0.4),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Container(
-                margin: const EdgeInsets.all(3),
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppTheme.secondaryBlack,
-                ),
-                child: ClipOval(
-                  child: _selectedImage != null
-                      ? Image.file(
-                          _selectedImage!,
-                          fit: BoxFit.cover,
-                          width: 114,
-                          height: 114,
-                        )
-                      : _userData['profileImageUrl'] != null &&
-                            _userData['profileImageUrl'].toString().isNotEmpty
-                      ? Image.network(
-                          _userData['profileImageUrl'],
-                          fit: BoxFit.cover,
-                          width: 114,
-                          height: 114,
-                          errorBuilder: (context, error, stackTrace) {
-                            return const CircleAvatar(
-                              radius: 57,
-                              backgroundColor: Colors.transparent,
-                              child: Icon(
-                                Icons.person,
-                                color: Colors.white,
-                                size: 60,
-                              ),
-                            );
-                          },
-                        )
-                      : const CircleAvatar(
-                          radius: 57,
-                          backgroundColor: Colors.transparent,
-                          child: Icon(
-                            Icons.person,
-                            color: Colors.white,
-                            size: 60,
-                          ),
-                        ),
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: 0,
-              right: 0,
-              child: GestureDetector(
-                onTap: _isUploadingImage ? null : _showImagePickerDialog,
-                child: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    gradient: _isUploadingImage
-                        ? LinearGradient(
-                            colors: [Colors.grey, Colors.grey.shade600],
-                          )
-                        : AppTheme.primaryGradient,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppTheme.primaryBlack, width: 2),
-                  ),
-                  child: _isUploadingImage
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
-                            ),
-                          ),
-                        )
-                      : const Icon(
-                          Icons.camera_alt,
-                          color: Colors.white,
-                          size: 18,
-                        ),
-                ),
+            Icon(icon, color: Colors.white, size: 16),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 16),
-        const Text(
-          'Tap to change profile picture',
-          style: TextStyle(color: AppTheme.secondaryText, fontSize: 14),
+      ),
+    );
+  }
+
+  Widget _buildProfilePicture() {
+    return Stack(
+      children: [
+        Container(
+          width: 120,
+          height: 120,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: AppTheme.primaryBlack, width: 3),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.4),
+                blurRadius: 15,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: ClipOval(
+            child: _selectedImage != null
+                ? Image.file(
+                    _selectedImage!,
+                    fit: BoxFit.cover,
+                    width: 80,
+                    height: 80,
+                  )
+                : _userData['profileImageUrl'] != null &&
+                      _userData['profileImageUrl'].toString().isNotEmpty
+                ? Image.network(
+                    _userData['profileImageUrl'],
+                    fit: BoxFit.cover,
+                    width: 80,
+                    height: 80,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: AppTheme.accentGray,
+                        child: const Icon(
+                          Icons.person,
+                          color: Colors.white,
+                          size: 40,
+                        ),
+                      );
+                    },
+                  )
+                : Container(
+                    color: AppTheme.accentGray,
+                    child: const Icon(
+                      Icons.person,
+                      color: Colors.white,
+                      size: 40,
+                    ),
+                  ),
+          ),
+        ),
+        Positioned(
+          bottom: 0,
+          right: 0,
+          child: GestureDetector(
+            onTap: _isUploadingImage ? null : _showImagePickerDialog,
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: AppTheme.accentOrange,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppTheme.primaryBlack, width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.4),
+                    blurRadius: 6,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: _isUploadingImage
+                  ? const SizedBox(
+                      width: 12,
+                      height: 12,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 1.5,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Icon(Icons.camera_alt, color: Colors.white, size: 18),
+            ),
+          ),
         ),
       ],
     );
@@ -835,7 +799,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       String? profileImageUrl;
       String? bannerImageUrl;
 
-      // Try to update profile image if changed (requires internet)
+      // Handle profile image update/removal
       if (_selectedImage != null) {
         try {
           setState(() {
@@ -868,7 +832,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         }
       }
 
-      // Try to update banner image if changed (requires internet)
+      // Handle banner image update/removal
       if (_selectedBannerImage != null) {
         try {
           bannerImageUrl = await _userService.updateBannerImage(
@@ -897,37 +861,56 @@ class _EditProfilePageState extends State<EditProfilePage> {
         await _auth.currentUser?.updateDisplayName(_nameController.text.trim());
       }
 
-      // Update all profile fields in Firestore in a single call
-      try {
-        await _userService.updateUserProfile(
-          userId: userId,
-          displayName: _nameController.text.trim(),
-          bio: _bioController.text.trim(),
-          location: _locationController.text.trim(),
-          website: _websiteController.text.trim(),
-          profileImageUrl: profileImageUrl,
-          bannerImageUrl: bannerImageUrl,
-        );
-
-        if (mounted) {
-          ToastHelper.updateSuccess(context, itemName: 'Profile');
-          // Delay navigation to show toast
-          await Future.delayed(const Duration(milliseconds: 500));
-          if (mounted) {
-            Navigator.pop(context, true); // Return true to indicate success
-          }
-        }
-      } catch (firestoreError) {
-        // If Firestore update fails (offline), still show success for Auth update
-        if (mounted) {
-          ToastHelper.warning(
-            context,
-            'Profile saved locally. Will sync when online.',
+      // Update other profile fields (only if images weren't updated separately)
+      if (profileImageUrl == null && bannerImageUrl == null) {
+        try {
+          await _userService.updateUserProfile(
+            userId: userId,
+            displayName: _nameController.text.trim(),
+            bio: _bioController.text.trim(),
+            location: _locationController.text.trim(),
+            website: _websiteController.text.trim(),
           );
-          await Future.delayed(const Duration(milliseconds: 500));
+        } catch (firestoreError) {
           if (mounted) {
-            Navigator.pop(context, true);
+            if (firestoreError.toString().contains('network') ||
+                firestoreError.toString().contains('offline') ||
+                firestoreError.toString().contains('UNAVAILABLE')) {
+              ToastHelper.warning(
+                context,
+                'You are offline. Changes will sync when online.',
+              );
+            } else {
+              ToastHelper.error(
+                context,
+                'Failed to save: ${firestoreError.toString()}',
+              );
+            }
           }
+          return;
+        }
+      } else {
+        // If images were updated, just update the text fields in Firestore
+        try {
+          await _firestore.collection('users').doc(userId).update({
+            'displayName': _nameController.text.trim(),
+            'bio': _bioController.text.trim(),
+            'location': _locationController.text.trim(),
+            'website': _websiteController.text.trim(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+        } catch (e) {
+          // Handle error but don't fail the whole operation
+          debugPrint('Error updating text fields: $e');
+        }
+      }
+
+      if (mounted) {
+        ToastHelper.updateSuccess(context, itemName: 'Profile');
+        // Delay navigation to show toast
+        await Future.delayed(const Duration(milliseconds: 500));
+        if (mounted) {
+          Navigator.pop(context, true); // Return true to indicate success
         }
       }
     } catch (e) {

@@ -6,7 +6,6 @@ class CommunityCard extends StatelessWidget {
   final Community community;
   final VoidCallback? onTap;
   final VoidCallback? onJoin;
-  final VoidCallback? onMembersView;
   final bool isJoined;
   final bool isJoining;
 
@@ -15,7 +14,6 @@ class CommunityCard extends StatelessWidget {
     required this.community,
     this.onTap,
     this.onJoin,
-    this.onMembersView,
     this.isJoined = false,
     this.isJoining = false,
   });
@@ -28,208 +26,185 @@ class CommunityCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
           color: AppTheme.secondaryBlack,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.3),
+              color: Colors.black.withValues(alpha: 0.2),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            // Cover Image
+            // Community Image on the left
             ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(20),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                bottomLeft: Radius.circular(16),
               ),
-              child: Stack(
-                children: [
-                  Stack(
-                    children: [
-                      Container(
-                        height: 160,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: AppTheme.accentGray,
-                          image: community.photoUrl.isNotEmpty
-                              ? DecorationImage(
-                                  image: NetworkImage(community.photoUrl),
-                                  fit: BoxFit.cover,
-                                )
-                              : null,
+              child: Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  color: AppTheme.accentGray,
+                  image: community.photoUrl.isNotEmpty
+                      ? DecorationImage(
+                          image: NetworkImage(community.photoUrl),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
+                ),
+                child: community.photoUrl.isEmpty
+                    ? Center(
+                        child: Text(
+                          community.name.isNotEmpty
+                              ? community.name[0].toUpperCase()
+                              : 'C',
+                          style: const TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
-                        child: community.photoUrl.isEmpty
-                            ? const Center(
-                                child: Icon(
-                                  Icons.image_outlined,
-                                  size: 50,
-                                  color: AppTheme.secondaryText,
+                      )
+                    : Stack(
+                        children: [
+                          // Member count overlay
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.7),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.3),
                                 ),
-                              )
-                            : null,
-                      ),
-                      // Dark gradient overlay for better text readability
-                      if (community.photoUrl.isNotEmpty)
-                        Container(
-                          height: 160,
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.transparent,
-                                Colors.black.withValues(alpha: 0.3),
-                                Colors.black.withValues(alpha: 0.6),
-                              ],
-                              stops: const [0.0, 0.7, 1.0],
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  Positioned(
-                    top: 12,
-                    right: 12,
-                    child: GestureDetector(
-                      onTap: () {
-                        // Prevent parent tap when tapping member count
-                        if (onMembersView != null) {
-                          onMembersView!();
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.7),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.3),
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.3),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.people,
-                              size: 14,
-                              color: Colors.white,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${community.stats.memberCount}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                shadows: [
-                                  Shadow(
-                                    offset: Offset(0, 1),
-                                    blurRadius: 2,
-                                    color: Colors.black54,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.people,
+                                    size: 12,
+                                    color: Colors.white,
+                                  ),
+                                  const SizedBox(width: 2),
+                                  Text(
+                                    '${community.stats.memberCount}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ],
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ),
-                ],
               ),
             ),
 
-            // Content
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              community.name,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              community.description,
-                              style: const TextStyle(
-                                color: AppTheme.secondaryText,
-                                fontSize: 13,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
+            // Content on the right
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Community name and description
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          community.name,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      if (onJoin != null)
-                        GestureDetector(
-                          onTap: () {
-                            // Prevent parent tap when tapping join button
-                            if (onJoin != null) {
-                              onJoin!();
-                            }
-                          },
-                          child: _buildJoinButton(),
+                        const SizedBox(height: 4),
+                        Text(
+                          community.description,
+                          style: const TextStyle(
+                            color: AppTheme.secondaryText,
+                            fontSize: 13,
+                            height: 1.3,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  if (community.tags.isNotEmpty)
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: community.tags.take(3).map((tag) {
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppTheme.accentGray,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.1),
-                            ),
-                          ),
-                          child: Text(
-                            '#$tag',
-                            style: const TextStyle(
-                              color: AppTheme.secondaryText,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        );
-                      }).toList(),
+                      ],
                     ),
-                ],
+
+                    const SizedBox(height: 12),
+
+                    // Tags and Join button row
+                    Row(
+                      children: [
+                        // Tags
+                        Expanded(
+                          child: community.tags.isNotEmpty
+                              ? Wrap(
+                                  spacing: 4,
+                                  runSpacing: 4,
+                                  children: community.tags.take(2).map((tag) {
+                                    return Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.accentGray,
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(
+                                          color: Colors.white.withValues(
+                                            alpha: 0.1,
+                                          ),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        '#$tag',
+                                        style: const TextStyle(
+                                          color: AppTheme.secondaryText,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                )
+                              : const SizedBox.shrink(),
+                        ),
+
+                        const SizedBox(width: 8),
+
+                        // Join button
+                        if (onJoin != null)
+                          GestureDetector(
+                            onTap: () {
+                              if (onJoin != null) {
+                                onJoin!();
+                              }
+                            },
+                            child: _buildJoinButton(),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -241,15 +216,15 @@ class CommunityCard extends StatelessWidget {
   Widget _buildJoinButton() {
     if (isJoining) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: AppTheme.accentGray,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
         ),
         child: const SizedBox(
-          width: 16,
-          height: 16,
+          width: 14,
+          height: 14,
           child: CircularProgressIndicator(
             strokeWidth: 2,
             valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
@@ -259,11 +234,11 @@ class CommunityCard extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         gradient: isJoined ? null : AppTheme.primaryGradient,
         color: isJoined ? AppTheme.accentGray : null,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isJoined
               ? Colors.white.withValues(alpha: 0.2)
@@ -274,7 +249,7 @@ class CommunityCard extends StatelessWidget {
             : [
                 BoxShadow(
                   color: AppTheme.accentOrange.withValues(alpha: 0.3),
-                  blurRadius: 8,
+                  blurRadius: 6,
                   offset: const Offset(0, 2),
                 ),
               ],
@@ -283,7 +258,7 @@ class CommunityCard extends StatelessWidget {
         isJoined ? 'Joined' : 'Join',
         style: TextStyle(
           color: Colors.white,
-          fontSize: 14,
+          fontSize: 12,
           fontWeight: FontWeight.w600,
           shadows: isJoined
               ? null

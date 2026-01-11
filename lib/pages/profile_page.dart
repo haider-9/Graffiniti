@@ -9,14 +9,14 @@ import '../core/services/share_service.dart';
 import 'settings_page.dart';
 import 'edit_profile_page.dart';
 
-class SimpleProfilePage extends StatefulWidget {
-  const SimpleProfilePage({super.key});
+class ProfilePage extends StatefulWidget {
+  const ProfilePage({super.key});
 
   @override
-  State<SimpleProfilePage> createState() => _SimpleProfilePageState();
+  State<ProfilePage> createState() => _ProfilePageState();
 }
 
-class _SimpleProfilePageState extends State<SimpleProfilePage> {
+class _ProfilePageState extends State<ProfilePage> {
   int _tabIndex = 0;
   final List<String> _tabs = ['My Art', 'Saved', 'Liked'];
   final AuthService _authService = AuthService();
@@ -143,11 +143,15 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
       elevation: 0,
       actions: [
         GestureDetector(
-          onTap: () {
-            Navigator.push(
+          onTap: () async {
+            final result = await Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const EditProfilePage()),
             );
+            // Refresh profile data if edit was successful
+            if (result == true) {
+              _loadUserData();
+            }
           },
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
@@ -263,13 +267,17 @@ class _SimpleProfilePageState extends State<SimpleProfilePage> {
                     children: [
                       // Profile picture
                       GestureDetector(
-                        onTap: () {
-                          Navigator.push(
+                        onTap: () async {
+                          final result = await Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (context) => const EditProfilePage(),
                             ),
                           );
+                          // Refresh profile data if edit was successful
+                          if (result == true) {
+                            _loadUserData();
+                          }
                         },
                         child: Stack(
                           children: [

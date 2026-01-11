@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:griffiniti/domain/models/community.dart';
 import 'package:provider/provider.dart';
 import '../view_model/community_view_model.dart';
 import 'community_card.dart';
@@ -10,8 +9,6 @@ import '../../../core/services/community_service.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/widgets/account_upgrade_dialog.dart';
 import '../../../core/utils/toast_helper.dart';
-import '../../../pages/community_members_page.dart';
-import '../../../models/community.dart' as lib_models;
 
 class CommunitiesScreen extends StatefulWidget {
   const CommunitiesScreen({super.key});
@@ -120,26 +117,6 @@ class _CommunitiesScreenState extends State<CommunitiesScreen> {
     );
   }
 
-  void _navigateToMembers(Community community) {
-    // Convert domain Community to the Community model expected by CommunityMembersPage
-    final simpleCommunity = lib_models.Community(
-      id: community.id,
-      name: community.name,
-      description: community.description,
-      imageUrl: community.photoUrl,
-      memberCount: community.stats.memberCount,
-      isJoined: _isJoined(community.id),
-      tags: community.tags,
-    );
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CommunityMembersPage(community: simpleCommunity),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -147,6 +124,8 @@ class _CommunitiesScreenState extends State<CommunitiesScreen> {
       appBar: AppBar(
         backgroundColor: AppTheme.primaryBlack,
         title: const Text('Communities', style: TextStyle(color: Colors.white)),
+        elevation: 0,
+        scrolledUnderElevation: 0,
         actions: [
           if (!_authService.isAnonymous)
             IconButton(
@@ -254,7 +233,6 @@ class _CommunitiesScreenState extends State<CommunitiesScreen> {
                             );
                           },
                           onJoin: () => _toggleJoinCommunity(community.id),
-                          onMembersView: () => _navigateToMembers(community),
                         );
                       },
                     ),
@@ -368,7 +346,6 @@ class _CommunitiesScreenState extends State<CommunitiesScreen> {
             );
           },
           onJoin: () => _toggleJoinCommunity(community.id),
-          onMembersView: () => _navigateToMembers(community),
         );
       },
     );

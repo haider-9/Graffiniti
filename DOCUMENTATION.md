@@ -261,12 +261,18 @@ The app follows a **layered architecture** with clear separation of concerns:
 
 **Files:**
 
-- `lib/pages/communities_page.dart` - Main communities interface
-- `lib/widgets/community_card.dart` - Community display component
-- `lib/widgets/community_post_card.dart` - Post display component
-- `lib/models/community.dart` - Community data model
-- `lib/models/community_post.dart` - Post data model
-- `lib/data/dummy_communities.dart` - Sample data (6 communities, 8 posts)
+- `lib/ui/community/widgets/communities_screen.dart` - Main communities interface
+- `lib/ui/community/widgets/community_card.dart` - Community display component
+- `lib/ui/community/widgets/community_detail_screen.dart` - Community detail view
+- `lib/ui/community/widgets/create_community_screen.dart` - Community creation
+- `lib/ui/community/widgets/edit_community_screen.dart` - Community editing
+- `lib/ui/community/widgets/community_form_widgets.dart` - Reusable form components
+- `lib/ui/community/widgets/image_upload_widget.dart` - Image upload component
+- `lib/ui/community/view_model/community_view_model.dart` - Community state management
+- `lib/data/repositories/community_repository.dart` - Community data access
+- `lib/core/services/community_service.dart` - Community business logic
+- `lib/domain/models/community.dart` - Community domain model
+- `lib/data/models/community_api_model.dart` - Community API model
 
 ### 5. Discovery System
 

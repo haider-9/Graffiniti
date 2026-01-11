@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../view_model/community_view_model.dart';
+import '../../../core/services/community_service.dart';
+import '../../../core/services/auth_service.dart';
 import 'community_form_widgets.dart';
 
 class CreateCommunityScreen extends StatefulWidget {
@@ -13,12 +15,19 @@ class CreateCommunityScreen extends StatefulWidget {
 
 class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
   bool _isLoading = false;
-  final GlobalKey<CommunityFormState> _formKey =
-      GlobalKey<CommunityFormState>();
+  final CommunityService _communityService = CommunityService();
+  final AuthService _authService = AuthService();
 
   Future<void> _handleFormSubmit(CommunityFormData data) async {
     if (data.handle == null || data.handle!.isEmpty) {
       _showErrorSnackBar('Handle is required');
+      return;
+    }
+
+    // Check if user is authenticated
+    final currentUser = _authService.currentUser;
+    if (currentUser == null) {
+      _showErrorSnackBar('You must be logged in to create a community');
       return;
     }
 
@@ -28,11 +37,16 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
       // Check if handle already exists
       await _checkHandleAvailability(data.handle!);
 
-      await context.read<CommunityViewModel>().createCommunity(
+      String? profileImageUrl;
+      String? bannerImageUrl;
+
+      // Create community first to get the ID
+      final communityViewModel = context.read<CommunityViewModel>();
+      final communityId = await communityViewModel.createCommunity(
         name: data.name,
         handle: data.handle!,
         description: data.description,
-        createdBy: 'current_user_id',
+        createdBy: currentUser.uid,
         photoUrl: data.photoUrl,
         bannerUrl: data.bannerUrl,
         rules: data.rules.isEmpty ? null : data.rules,
@@ -40,9 +54,57 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
         visibility: data.visibility,
       );
 
+      // Upload images if provided
+      if (data.profileImage != null) {
+        try {
+          profileImageUrl = await _communityService.uploadCommunityProfileImage(
+            communityId,
+            data.profileImage!,
+          );
+        } catch (e) {
+          if (mounted) {
+            _showErrorSnackBar(
+              'Failed to upload profile image: ${e.toString()}',
+            );
+          }
+        }
+      }
+
+      if (data.bannerImage != null) {
+        try {
+          bannerImageUrl = await _communityService.uploadCommunityBannerImage(
+            communityId,
+            data.bannerImage!,
+          );
+        } catch (e) {
+          if (mounted) {
+            _showErrorSnackBar(
+              'Failed to upload banner image: ${e.toString()}',
+            );
+          }
+        }
+      }
+
+      // Update community with image URLs if uploaded
+      if (profileImageUrl != null || bannerImageUrl != null) {
+        await FirebaseFirestore.instance
+            .collection('communities')
+            .doc(communityId)
+            .update({
+              if (profileImageUrl != null) 'photoUrl': profileImageUrl,
+              if (bannerImageUrl != null) 'bannerUrl': bannerImageUrl,
+              'updatedAt': FieldValue.serverTimestamp(),
+            });
+      }
+
       if (mounted) {
-        Navigator.pop(context);
+        // Navigate back to communities screen and refresh data
+        Navigator.of(context).popUntil((route) => route.isFirst);
         _showSuccessSnackBar('Community created successfully! 🎉');
+
+        // Refresh communities data
+        final viewModel = context.read<CommunityViewModel>();
+        viewModel.loadCommunities();
       }
     } catch (e) {
       if (mounted) {
@@ -129,12 +191,13 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
     return Scaffold(
       backgroundColor: colorScheme.surface,
       appBar: AppBar(
+        backgroundColor: colorScheme.surface,
         title: const Text('Create Community'),
         centerTitle: true,
         elevation: 0,
+        scrolledUnderElevation: 0,
       ),
       body: CommunityForm(
-        key: _formKey,
         isEditing: false,
         onSubmit: _handleFormSubmit,
         isLoading: _isLoading,

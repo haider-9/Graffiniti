@@ -10,17 +10,23 @@ class CloudinaryConfig {
   //    - Configure folder structure and transformations as needed
   //    - Save the preset
   static const String cloudName = 'dntncz9no'; // Replace with your cloud name
-  static const String uploadPreset = 'unsigned_preset'; // Replace with your upload preset name
-  static const String apiKey = '163553321267567'; // Optional: Replace with actual API key for signed uploads
-  static const String apiSecret = 'H1LqwBGnE5abgOxDirRxETDUvH4'; // Optional: Replace with actual API secret for signed uploads
+  static const String uploadPreset =
+      'graffiniti_uploads'; // Replace with your upload preset name
+  static const String apiKey =
+      '163553321267567'; // Optional: Replace with actual API key for signed uploads
+  static const String apiSecret =
+      'H1LqwBGnE5abgOxDirRxETDUvH4'; // Optional: Replace with actual API secret for signed uploads
 
   // Upload URL
-  static const String uploadUrl = 'https://api.cloudinary.com/v1_1/$cloudName/image/upload';
+  static const String uploadUrl =
+      'https://api.cloudinary.com/v1_1/$cloudName/image/upload';
 
   // Folders for different image types
   static const String profileImagesFolder = 'profile_images';
   static const String bannerImagesFolder = 'banner_images';
   static const String graffitiImagesFolder = 'graffiti_images';
+  static const String communityImagesFolder = 'community_images';
+  static const String communityBannersFolder = 'community_banners';
 
   // Timeouts
   static const Duration uploadTimeout = Duration(seconds: 30);
@@ -39,11 +45,15 @@ class CloudinaryConfig {
   static const int maxProfileImageSize = 5 * 1024 * 1024; // 5MB
   static const int maxBannerImageSize = 10 * 1024 * 1024; // 10MB
   static const int maxGraffitiImageSize = 15 * 1024 * 1024; // 15MB
+  static const int maxCommunityImageSize = 8 * 1024 * 1024; // 8MB
+  static const int maxCommunityBannerSize = 12 * 1024 * 1024; // 12MB
 
   // Supported image formats
   static const List<String> supportedFormats = ['jpg', 'jpeg', 'png', 'webp'];
 
   // Default images
-  static const String defaultProfileImage = 'https://res.cloudinary.com/$cloudName/image/upload/v1/defaults/default_profile.jpg';
-  static const String defaultBannerImage = 'https://res.cloudinary.com/$cloudName/image/upload/v1/defaults/default_banner.jpg';
+  static const String defaultProfileImage =
+      'https://res.cloudinary.com/$cloudName/image/upload/v1/defaults/default_profile.jpg';
+  static const String defaultBannerImage =
+      'https://res.cloudinary.com/$cloudName/image/upload/v1/defaults/default_banner.jpg';
 }

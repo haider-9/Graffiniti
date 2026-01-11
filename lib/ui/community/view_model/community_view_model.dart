@@ -95,7 +95,7 @@ class CommunityViewModel extends ChangeNotifier {
     super.dispose();
   }
 
-  Future<void> createCommunity({
+  Future<String> createCommunity({
     required String name,
     required String handle,
     required String description,
@@ -110,7 +110,7 @@ class CommunityViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _repository.createCommunity(
+      final community = await _repository.createCommunity(
         name: name,
         handle: handle,
         description: description,
@@ -122,8 +122,10 @@ class CommunityViewModel extends ChangeNotifier {
         visibility: visibility,
       );
       _error = null;
+      return community.id;
     } catch (e) {
       _error = e.toString();
+      rethrow;
     } finally {
       _loading = false;
       notifyListeners();

@@ -1,12 +1,15 @@
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/community_member.dart';
 import 'auth_service.dart';
+import 'cloudinary_service.dart';
 
 class CommunityService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final AuthService _authService = AuthService();
+  final CloudinaryService _cloudinaryService = CloudinaryService();
 
   /// Join a community
   Future<bool> joinCommunity(String communityId) async {
@@ -344,6 +347,137 @@ class CommunityService {
       return true;
     } catch (e) {
       throw Exception('Failed to remove member: ${e.toString()}');
+    }
+  }
+
+  /// Upload community profile image
+  Future<String> uploadCommunityProfileImage(
+    String communityId,
+    File imageFile,
+  ) async {
+    try {
+      final userId = _auth.currentUser?.uid;
+      if (userId == null) throw Exception('User not authenticated');
+
+      // Check if user is anonymous
+      if (_authService.isAnonymous) {
+        throw Exception('Anonymous users cannot upload images.');
+      }
+
+      return await _cloudinaryService.uploadCommunityProfileImage(
+        communityId,
+        imageFile,
+      );
+    } catch (e) {
+      throw Exception(
+        'Failed to upload community profile image: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Upload community banner image
+  Future<String> uploadCommunityBannerImage(
+    String communityId,
+    File imageFile,
+  ) async {
+    try {
+      final userId = _auth.currentUser?.uid;
+      if (userId == null) throw Exception('User not authenticated');
+
+      // Check if user is anonymous
+      if (_authService.isAnonymous) {
+        throw Exception('Anonymous users cannot upload images.');
+      }
+
+      return await _cloudinaryService.uploadCommunityBannerImage(
+        communityId,
+        imageFile,
+      );
+    } catch (e) {
+      throw Exception(
+        'Failed to upload community banner image: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Update community profile image
+  Future<String> updateCommunityProfileImage(
+    String communityId,
+    File imageFile,
+  ) async {
+    try {
+      final userId = _auth.currentUser?.uid;
+      if (userId == null) throw Exception('User not authenticated');
+
+      // Check if user has permission to edit community
+      final memberDoc = await _firestore
+          .collection('communities')
+          .doc(communityId)
+          .collection('members')
+          .doc(userId)
+          .get();
+
+      final memberRole = memberDoc.data()?['role'] ?? 'member';
+      if (memberRole != 'admin' && memberRole != 'owner') {
+        throw Exception('Insufficient permissions to update community images');
+      }
+
+      // Upload new image
+      final imageUrl = await uploadCommunityProfileImage(
+        communityId,
+        imageFile,
+      );
+
+      // Update community document
+      await _firestore.collection('communities').doc(communityId).update({
+        'photoUrl': imageUrl,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      return imageUrl;
+    } catch (e) {
+      throw Exception(
+        'Failed to update community profile image: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Update community banner image
+  Future<String> updateCommunityBannerImage(
+    String communityId,
+    File imageFile,
+  ) async {
+    try {
+      final userId = _auth.currentUser?.uid;
+      if (userId == null) throw Exception('User not authenticated');
+
+      // Check if user has permission to edit community
+      final memberDoc = await _firestore
+          .collection('communities')
+          .doc(communityId)
+          .collection('members')
+          .doc(userId)
+          .get();
+
+      final memberRole = memberDoc.data()?['role'] ?? 'member';
+      if (memberRole != 'admin' && memberRole != 'owner') {
+        throw Exception('Insufficient permissions to update community images');
+      }
+
+      // Upload new image
+      final imageUrl = await uploadCommunityBannerImage(communityId, imageFile);
+
+      // Update community document
+      await _firestore.collection('communities').doc(communityId).update({
+        'bannerUrl': imageUrl,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      return imageUrl;
+    } catch (e) {
+      throw Exception(
+        'Failed to update community banner image: ${e.toString()}',
+      );
     }
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/models/community.dart';
 import '../view_model/community_view_model.dart';
+import '../../../core/services/community_service.dart';
 import 'community_form_widgets.dart';
 
 class EditCommunityScreen extends StatefulWidget {
@@ -15,8 +16,7 @@ class EditCommunityScreen extends StatefulWidget {
 
 class _EditCommunityScreenState extends State<EditCommunityScreen> {
   bool _isLoading = false;
-  final GlobalKey<CommunityFormState> _formKey =
-      GlobalKey<CommunityFormState>();
+  final CommunityService _communityService = CommunityService();
 
   @override
   Widget build(BuildContext context) {
@@ -33,15 +33,16 @@ class _EditCommunityScreenState extends State<EditCommunityScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.surface,
         title: const Text('Community Settings'),
         centerTitle: true,
         elevation: 0,
+        scrolledUnderElevation: 0,
       ),
       body: Column(
         children: [
           Expanded(
             child: CommunityForm(
-              key: _formKey,
               initialData: initialData,
               isEditing: true,
               onSubmit: _handleFormSubmit,
@@ -126,7 +127,8 @@ class _EditCommunityScreenState extends State<EditCommunityScreen> {
       await viewModel.deleteCommunity(widget.community.id);
 
       if (mounted) {
-        Navigator.of(context).pop(true);
+        // Navigate back to communities screen and refresh data
+        Navigator.of(context).popUntil((route) => route.isFirst);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Community deleted successfully'),
@@ -134,6 +136,10 @@ class _EditCommunityScreenState extends State<EditCommunityScreen> {
             behavior: SnackBarBehavior.floating,
           ),
         );
+
+        // Refresh communities data
+        final viewModel = context.read<CommunityViewModel>();
+        viewModel.loadCommunities();
       }
     } catch (e) {
       if (mounted) {
@@ -160,38 +166,65 @@ class _EditCommunityScreenState extends State<EditCommunityScreen> {
     });
 
     try {
+      String? profileImageUrl = data.photoUrl;
+      String? bannerImageUrl = data.bannerUrl;
+
+      // Upload new images if provided
+      if (data.profileImage != null) {
+        try {
+          profileImageUrl = await _communityService.updateCommunityProfileImage(
+            widget.community.id,
+            data.profileImage!,
+          );
+        } catch (e) {
+          if (mounted) {
+            _showErrorSnackBar(
+              'Failed to upload profile image: ${e.toString()}',
+            );
+          }
+        }
+      }
+
+      if (data.bannerImage != null) {
+        try {
+          bannerImageUrl = await _communityService.updateCommunityBannerImage(
+            widget.community.id,
+            data.bannerImage!,
+          );
+        } catch (e) {
+          if (mounted) {
+            _showErrorSnackBar(
+              'Failed to upload banner image: ${e.toString()}',
+            );
+          }
+        }
+      }
+
       final viewModel = context.read<CommunityViewModel>();
 
       await viewModel.updateCommunity(
         communityId: widget.community.id,
         name: data.name,
         description: data.description,
-        photoUrl: data.photoUrl ?? '',
-        bannerUrl: data.bannerUrl ?? '',
+        photoUrl: profileImageUrl ?? '',
+        bannerUrl: bannerImageUrl ?? '',
         tags: data.tags,
         rules: data.rules,
         visibility: data.visibility,
       );
 
       if (mounted) {
-        Navigator.of(context).pop(true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Community updated successfully'),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        // Navigate back to communities screen and refresh data
+        Navigator.of(context).popUntil((route) => route.isFirst);
+        _showSuccessSnackBar('Community updated successfully! ✨');
+
+        // Refresh communities data
+        final viewModel = context.read<CommunityViewModel>();
+        viewModel.loadCommunities();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error updating community: $e'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        _showErrorSnackBar('Error updating community: ${e.toString()}');
       }
     } finally {
       if (mounted) {
@@ -200,5 +233,36 @@ class _EditCommunityScreenState extends State<EditCommunityScreen> {
         });
       }
     }
+  }
+
+  void _showSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green.shade600,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red.shade600,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 4),
+        action: SnackBarAction(
+          label: 'Dismiss',
+          textColor: Colors.white,
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
+        ),
+      ),
+    );
   }
 }

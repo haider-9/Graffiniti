@@ -231,26 +231,36 @@ class UserService {
       try {
         final userData = await getUserData(userId);
         oldImageUrl = userData?['profileImageUrl'];
+        print('Current profile image URL: $oldImageUrl');
       } catch (e) {
+        print('Error getting current profile image URL: $e');
         // Ignore error, continue with update
       }
 
       if (imageFile != null) {
         // Upload new image to Cloudinary
+        print('Uploading new profile image...');
         imageUrl = await uploadProfileImage(userId, imageFile);
+        print('New profile image URL: $imageUrl');
 
         // Delete old image from Cloudinary if it exists
         if (oldImageUrl != null &&
             oldImageUrl.isNotEmpty &&
             _cloudinaryService.isCloudinaryUrl(oldImageUrl)) {
+          print('Attempting cleanup of old profile image: $oldImageUrl');
           await _cloudinaryService.deleteImageByUrl(oldImageUrl);
+          // Note: With unsigned uploads, old images cannot be automatically deleted
         }
       } else {
         // Remove image - delete from Cloudinary if it exists
         if (oldImageUrl != null &&
             oldImageUrl.isNotEmpty &&
             _cloudinaryService.isCloudinaryUrl(oldImageUrl)) {
-          await _cloudinaryService.deleteImageByUrl(oldImageUrl);
+          print('Removing profile image: $oldImageUrl');
+          final deleteResult = await _cloudinaryService.deleteImageByUrl(
+            oldImageUrl,
+          );
+          print('Delete result: $deleteResult');
         }
         imageUrl = '';
       }
@@ -261,8 +271,10 @@ class UserService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
+      print('Profile image updated successfully');
       return imageUrl;
     } catch (e) {
+      print('Error updating profile image: $e');
       throw Exception('Failed to update profile image: ${e.toString()}');
     }
   }
@@ -286,26 +298,34 @@ class UserService {
       try {
         final userData = await getUserData(userId);
         oldImageUrl = userData?['bannerImageUrl'];
+        print('Current banner image URL: $oldImageUrl');
       } catch (e) {
+        print('Error getting current banner image URL: $e');
         // Ignore error, continue with update
       }
 
       if (imageFile != null) {
         // Upload new image to Cloudinary
+        print('Uploading new banner image...');
         imageUrl = await uploadBannerImage(userId, imageFile);
+        print('New banner image URL: $imageUrl');
 
         // Delete old image from Cloudinary if it exists
         if (oldImageUrl != null &&
             oldImageUrl.isNotEmpty &&
             _cloudinaryService.isCloudinaryUrl(oldImageUrl)) {
+          print('Attempting cleanup of old banner image: $oldImageUrl');
           await _cloudinaryService.deleteImageByUrl(oldImageUrl);
+          // Note: With unsigned uploads, old images cannot be automatically deleted
         }
       } else {
         // Remove image - delete from Cloudinary if it exists
         if (oldImageUrl != null &&
             oldImageUrl.isNotEmpty &&
             _cloudinaryService.isCloudinaryUrl(oldImageUrl)) {
+          print('Attempting cleanup of removed banner image: $oldImageUrl');
           await _cloudinaryService.deleteImageByUrl(oldImageUrl);
+          // Note: With unsigned uploads, old images cannot be automatically deleted
         }
         imageUrl = '';
       }
@@ -316,8 +336,10 @@ class UserService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
+      print('Banner image updated successfully');
       return imageUrl;
     } catch (e) {
+      print('Error updating banner image: $e');
       throw Exception('Failed to update banner image: ${e.toString()}');
     }
   }

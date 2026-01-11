@@ -63,6 +63,9 @@ class ARStickerViewModel extends ChangeNotifier {
   }
 
   void enterPlacementMode(ARStickerTemplate template) {
+    debugPrint(
+      'Entering placement mode with template: ${template.type} - ${template.content}',
+    );
     _selectedTemplate = template;
     _isPlacementMode = true;
     _currentMode = ARMode.placing;
@@ -110,27 +113,86 @@ class ARStickerViewModel extends ChangeNotifier {
 
   // Sticker placement
   Future<bool> placeStickerAtScreenPosition(Offset screenPosition) async {
-    if (!_isPlacementMode || _selectedTemplate == null) return false;
+    debugPrint(
+      'Attempting to place sticker at screen position: $screenPosition',
+    );
+
+    if (!_isPlacementMode || _selectedTemplate == null) {
+      debugPrint('Not in placement mode or no template selected');
+      return false;
+    }
 
     // Perform hit test to get world position
     final worldPosition = _arService.hitTestPlane(screenPosition);
-    if (worldPosition == null) return false;
+    if (worldPosition == null) {
+      debugPrint('Hit test failed - no world position returned');
+      return false;
+    }
+
+    debugPrint('Hit test successful - world position: $worldPosition');
 
     // Create sticker from template
-    final sticker = ARSticker(
-      id: _generateStickerId(),
-      type: _selectedTemplate!.type,
-      content: _selectedTemplate!.content,
-      position: worldPosition,
-      properties: Map.from(_selectedTemplate!.defaultProperties),
-      state: StickerState.placing,
-    );
+    ARSticker sticker;
+    if (_selectedTemplate!.type == StickerType.image) {
+      // For image stickers, load the image bytes
+      debugPrint('Loading image bytes for: ${_selectedTemplate!.content}');
+      final imageBytes = await _arService.loadAsset(_selectedTemplate!.content);
+
+      if (imageBytes != null) {
+        debugPrint(
+          'Successfully loaded ${imageBytes.length} bytes for image sticker',
+        );
+        final properties = Map<String, dynamic>.from(
+          _selectedTemplate!.defaultProperties,
+        );
+        properties['imageBytes'] = imageBytes;
+        properties['assetPath'] = _selectedTemplate!.content;
+
+        sticker = ARSticker(
+          id: _generateStickerId(),
+          type: _selectedTemplate!.type,
+          content: _selectedTemplate!.content,
+          position: worldPosition,
+          properties: properties,
+          state: StickerState.placing,
+        );
+      } else {
+        debugPrint('Failed to load image bytes, creating fallback sticker');
+        sticker = ARSticker(
+          id: _generateStickerId(),
+          type: _selectedTemplate!.type,
+          content: _selectedTemplate!.content,
+          position: worldPosition,
+          properties: Map<String, dynamic>.from(
+            _selectedTemplate!.defaultProperties,
+          ),
+          state: StickerState.placing,
+        );
+      }
+    } else {
+      // For non-image stickers (emoji, text, shapes)
+      sticker = ARSticker(
+        id: _generateStickerId(),
+        type: _selectedTemplate!.type,
+        content: _selectedTemplate!.content,
+        position: worldPosition,
+        properties: Map<String, dynamic>.from(
+          _selectedTemplate!.defaultProperties,
+        ),
+        state: StickerState.placing,
+      );
+    }
+
+    debugPrint('Created sticker: ${sticker.id} of type: ${sticker.type}');
 
     // Add to AR scene
     final stickerId = await _arService.addSticker(sticker, worldPosition);
     if (stickerId != null) {
+      debugPrint('Successfully added sticker to AR scene: $stickerId');
       exitPlacementMode();
       return true;
+    } else {
+      debugPrint('Failed to add sticker to AR scene');
     }
 
     return false;
@@ -142,10 +204,14 @@ class ARStickerViewModel extends ChangeNotifier {
   }
 
   void onTap(TapUpDetails details) {
+    debugPrint('Tap detected at: ${details.localPosition}');
+
     if (_isPlacementMode) {
+      debugPrint('In placement mode - attempting to place sticker');
       // Place sticker
       placeStickerAtScreenPosition(details.localPosition);
     } else if (_currentMode == ARMode.viewing) {
+      debugPrint('In viewing mode - attempting to select sticker');
       // Try to select a sticker for editing
       _trySelectStickerAtPosition(details.localPosition);
     }
@@ -260,7 +326,7 @@ class ARStickerViewModel extends ChangeNotifier {
       position: originalSticker.position + offset,
       rotation: originalSticker.rotation,
       scale: originalSticker.scale,
-      properties: Map.from(originalSticker.properties),
+      properties: Map<String, dynamic>.from(originalSticker.properties),
     );
 
     await _arService.addSticker(duplicateSticker, duplicateSticker.position);

@@ -138,6 +138,33 @@ class _ARStickersScreenState extends State<ARStickersScreen> {
           ),
         ),
 
+        // Gesture detector for AR interactions (MUST be before UI overlays)
+        Positioned.fill(
+          child: Consumer<ARStickerViewModel>(
+            builder: (context, viewModel, child) {
+              return GestureDetector(
+                onTapDown: (details) {
+                  debugPrint(
+                    'Gesture detector - tap down at: ${details.localPosition}',
+                  );
+                  viewModel.onTapDown(details);
+                },
+                onTapUp: (details) {
+                  debugPrint(
+                    'Gesture detector - tap up at: ${details.localPosition}',
+                  );
+                  viewModel.onTap(details);
+                },
+                // Use only scale gestures (includes pan functionality)
+                onScaleStart: viewModel.onScaleStart,
+                onScaleUpdate: viewModel.onScaleUpdate,
+                onScaleEnd: viewModel.onScaleEnd,
+                child: Container(color: Colors.transparent),
+              );
+            },
+          ),
+        ),
+
         // AR Controls Overlay
         Consumer<ARStickerViewModel>(
           builder: (context, viewModel, child) {
@@ -153,23 +180,6 @@ class _ARStickersScreenState extends State<ARStickersScreen> {
           builder: (context, viewModel, child) {
             return ARStickerPanel(viewModel: viewModel);
           },
-        ),
-
-        // Gesture detector for AR interactions
-        Positioned.fill(
-          child: Consumer<ARStickerViewModel>(
-            builder: (context, viewModel, child) {
-              return GestureDetector(
-                onTapDown: viewModel.onTapDown,
-                onTapUp: viewModel.onTap,
-                // Use only scale gestures (includes pan functionality)
-                onScaleStart: viewModel.onScaleStart,
-                onScaleUpdate: viewModel.onScaleUpdate,
-                onScaleEnd: viewModel.onScaleEnd,
-                child: Container(color: Colors.transparent),
-              );
-            },
-          ),
         ),
       ],
     );

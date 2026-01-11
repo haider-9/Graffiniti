@@ -231,5 +231,24 @@ class StickerTemplates {
     ),
   ];
 
-  static List<ARStickerTemplate> get all => [...emojis, ...shapes];
+  static const List<ARStickerTemplate> images = [
+    ARStickerTemplate(
+      id: 'image_spray',
+      name: 'Spray',
+      type: StickerType.image,
+      content: 'assets/icons/spray.png',
+      previewAsset: 'assets/icons/spray.png',
+      defaultProperties: {'size': 0.2, 'opacity': 1.0},
+    ),
+    ARStickerTemplate(
+      id: 'image_spray2',
+      name: 'Spray 2',
+      type: StickerType.image,
+      content: 'assets/icons/spray-2.png',
+      previewAsset: 'assets/icons/spray-2.png',
+      defaultProperties: {'size': 0.2, 'opacity': 1.0},
+    ),
+  ];
+
+  static List<ARStickerTemplate> get all => [...emojis, ...shapes, ...images];
 }

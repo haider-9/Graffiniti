@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -82,7 +82,9 @@ class AuthService {
             await _googleSignIn.signOut();
           } catch (e) {
             // Google sign out failed, but continue with Firebase sign out
-            print('Google sign out failed: $e');
+            if (kDebugMode) {
+              print('Google sign out failed: $e');
+            }
           }
         }
 
@@ -135,12 +137,28 @@ class AuthService {
 
         return result;
       } else {
-        // For mobile platforms, use google_sign_in package
-        final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+        // For mobile platforms, use google_sign_in package with better error handling
+
+        // First, sign out any existing Google account to ensure clean state
+        try {
+          await _googleSignIn.signOut();
+        } catch (e) {
+          // Ignore sign out errors, continue with sign in
+          if (kDebugMode) {
+            print('Google sign out error (ignored): $e');
+          }
+        }
+
+        // Configure Google Sign-In with explicit scopes
+        final GoogleSignIn googleSignIn = GoogleSignIn(
+          scopes: ['email', 'profile'],
+        );
+
+        final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
 
         if (googleUser == null) {
           // User canceled the sign-in
-          return null;
+          throw Exception('Sign-in was canceled by user');
         }
 
         // Obtain the auth details from the request
@@ -149,7 +167,9 @@ class AuthService {
 
         // Check if we got the required tokens
         if (googleAuth.accessToken == null || googleAuth.idToken == null) {
-          throw Exception('Failed to get Google authentication tokens');
+          throw Exception(
+            'Failed to get Google authentication tokens. Please try again.',
+          );
         }
 
         // Create a new credential
@@ -176,17 +196,19 @@ class AuthService {
       switch (e.code) {
         case 'account-exists-with-different-credential':
           errorMessage =
-              'An account already exists with a different sign-in method.';
+              'An account already exists with a different sign-in method. Please try signing in with your email and password.';
           break;
         case 'invalid-credential':
-          errorMessage = 'The credential is invalid or expired.';
+          errorMessage =
+              'The credential is invalid or expired. Please try again.';
           break;
         case 'operation-not-allowed':
           errorMessage =
               'Google sign-in is not enabled. Please contact support.';
           break;
         case 'user-disabled':
-          errorMessage = 'This account has been disabled.';
+          errorMessage =
+              'This account has been disabled. Please contact support.';
           break;
         case 'user-not-found':
           errorMessage = 'No account found with this credential.';
@@ -194,20 +216,37 @@ class AuthService {
         case 'wrong-password':
           errorMessage = 'Invalid credential provided.';
           break;
+        case 'network-request-failed':
+          errorMessage =
+              'Network error. Please check your internet connection and try again.';
+          break;
         default:
-          errorMessage = 'Google sign-in failed: ${e.message}';
+          errorMessage = 'Google sign-in failed: ${e.message ?? e.code}';
       }
       throw Exception(errorMessage);
     } catch (e) {
-      // Handle other types of errors
-      if (e.toString().contains('network_error')) {
+      // Handle other types of errors with more specific messages
+      String errorMessage = e.toString().toLowerCase();
+
+      if (errorMessage.contains('network_error') ||
+          errorMessage.contains('network error')) {
         throw Exception(
-          'Network error. Please check your internet connection.',
+          'Network error. Please check your internet connection and try again.',
         );
-      } else if (e.toString().contains('sign_in_canceled')) {
+      } else if (errorMessage.contains('sign_in_canceled') ||
+          errorMessage.contains('canceled')) {
         throw Exception('Sign-in was canceled.');
-      } else if (e.toString().contains('sign_in_failed')) {
-        throw Exception('Google sign-in failed. Please try again.');
+      } else if (errorMessage.contains('sign_in_failed')) {
+        throw Exception(
+          'Google sign-in failed. This might be due to configuration issues. Please try again or contact support.',
+        );
+      } else if (errorMessage.contains('developer_error') ||
+          errorMessage.contains('api_not_connected')) {
+        throw Exception(
+          'Google Sign-In is not properly configured. Please contact support.',
+        );
+      } else if (errorMessage.contains('internal_error')) {
+        throw Exception('An internal error occurred. Please try again.');
       } else {
         throw Exception('Google sign-in failed: ${e.toString()}');
       }
@@ -405,12 +444,6 @@ class AuthService {
     return 'unknown';
   }
 
-  // Get sign-in methods for email
-  Future<List<String>> getSignInMethodsForEmail(String email) async {
-    try {
-      return await _auth.fetchSignInMethodsForEmail(email);
-    } catch (e) {
-      throw Exception('Failed to get sign-in methods: ${e.toString()}');
-    }
-  }
+  // Check if email is already registered (deprecated method removed for security)
+  // Use try-catch with signInWithEmailAndPassword instead for email validation
 }

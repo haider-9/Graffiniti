@@ -57,23 +57,35 @@ class _ARStickerPanelState extends State<ARStickerPanel>
   }
 
   void _togglePanel() {
+    debugPrint('Toggle panel tapped - current state: $_showPanel');
     setState(() {
       _showPanel = !_showPanel;
     });
+    debugPrint('Panel state changed to: $_showPanel');
   }
 
   void _selectTemplate(ARStickerTemplate template) {
+    debugPrint('Template selected: ${template.name} (${template.type})');
     setState(() {
       _selectedTemplate = template;
     });
   }
 
   void _enterPlacementMode() {
+    debugPrint(
+      'Enter placement mode tapped - selected template: ${_selectedTemplate?.name}',
+    );
     if (_selectedTemplate != null) {
+      debugPrint(
+        'Calling viewModel.enterPlacementMode with template: ${_selectedTemplate!.name}',
+      );
       widget.viewModel.enterPlacementMode(_selectedTemplate!);
       setState(() {
         _showPanel = false;
       });
+      debugPrint('Panel hidden, placement mode should be active');
+    } else {
+      debugPrint('No template selected - cannot enter placement mode');
     }
   }
 
@@ -234,7 +246,7 @@ class _ARStickerPanelState extends State<ARStickerPanel>
         labelStyle: const TextStyle(fontWeight: FontWeight.w600),
         tabs: const [
           Tab(text: 'Emojis'),
-          Tab(text: 'Shapes'),
+          Tab(text: 'Images'),
           Tab(text: 'Text'),
         ],
       ),
@@ -244,7 +256,7 @@ class _ARStickerPanelState extends State<ARStickerPanel>
   Widget _buildTabContent() {
     return TabBarView(
       controller: _tabController,
-      children: [_buildEmojiTab(), _buildShapeTab(), _buildTextTab()],
+      children: [_buildEmojiTab(), _buildImageTab(), _buildTextTab()],
     );
   }
 
@@ -298,7 +310,7 @@ class _ARStickerPanelState extends State<ARStickerPanel>
     );
   }
 
-  Widget _buildShapeTab() {
+  Widget _buildImageTab() {
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -306,13 +318,14 @@ class _ARStickerPanelState extends State<ARStickerPanel>
           Expanded(
             child: GridView.builder(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
+                crossAxisCount: 2,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 1.0,
               ),
-              itemCount: StickerTemplates.shapes.length,
+              itemCount: StickerTemplates.images.length,
               itemBuilder: (context, index) {
-                final template = StickerTemplates.shapes[index];
+                final template = StickerTemplates.images[index];
                 final isSelected = _selectedTemplate?.id == template.id;
 
                 return GestureDetector(
@@ -322,25 +335,44 @@ class _ARStickerPanelState extends State<ARStickerPanel>
                       color: isSelected
                           ? AppTheme.accentOrange.withValues(alpha: 0.3)
                           : AppTheme.lightGray.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: isSelected
                             ? AppTheme.accentOrange
                             : Colors.white24,
-                        width: 1,
+                        width: 2,
                       ),
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        _buildShapeIcon(template.content),
-                        const SizedBox(height: 8),
-                        Text(
-                          template.name,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
+                        // PNG Image preview
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Image.asset(
+                              template.content,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Icon(
+                                  Icons.image_not_supported,
+                                  color: Colors.white54,
+                                  size: 48,
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                        // Template name
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Text(
+                            template.name,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
                       ],
@@ -355,28 +387,6 @@ class _ARStickerPanelState extends State<ARStickerPanel>
         ],
       ),
     );
-  }
-
-  Widget _buildShapeIcon(String shape) {
-    IconData icon;
-    switch (shape) {
-      case 'circle':
-        icon = Icons.circle;
-        break;
-      case 'square':
-        icon = Icons.square;
-        break;
-      case 'triangle':
-        icon = Icons.change_history;
-        break;
-      case 'arrow':
-        icon = Icons.arrow_forward;
-        break;
-      default:
-        icon = Icons.circle;
-    }
-
-    return Icon(icon, color: Colors.white, size: 32);
   }
 
   Widget _buildTextTab() {
@@ -491,6 +501,9 @@ class _ARStickerPanelState extends State<ARStickerPanel>
   }
 
   Widget _buildPlacementIndicator() {
+    debugPrint(
+      'Building placement indicator - placement mode: ${widget.viewModel.isPlacementMode}',
+    );
     return Positioned(
       top: MediaQuery.of(context).padding.top + 80,
       left: 16,
@@ -523,7 +536,10 @@ class _ARStickerPanelState extends State<ARStickerPanel>
               ),
             ),
             GestureDetector(
-              onTap: () => widget.viewModel.exitPlacementMode(),
+              onTap: () {
+                debugPrint('Placement indicator close button tapped');
+                widget.viewModel.exitPlacementMode();
+              },
               child: Icon(Icons.close, color: Colors.white, size: 20),
             ),
           ],
